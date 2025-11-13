@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+
 import '../models/routine.dart';
 
 class StatisticsView extends ConsumerWidget {
@@ -12,33 +13,37 @@ class StatisticsView extends ConsumerWidget {
     final completed =
         routines.where((r) => r.status == RoutineStatus.done).toList();
     final total = routines.length;
-
     final completionRate =
-        total > 0 ? ((completed.length / total) * 100).round() : 0;
-
-    final avgFocus = completed.isNotEmpty
-        ? (completed.fold<int>(0, (sum, r) => sum + r.focusLevel) /
+        total == 0 ? 0 : ((completed.length / total) * 100).round();
+    final avgFocus = completed.isEmpty
+        ? '0.0'
+        : (completed.fold<int>(0, (sum, r) => sum + r.focusLevel) /
                 completed.length)
-            .toStringAsFixed(1)
-        : '0.0';
+            .toStringAsFixed(1);
 
-    final totalMinutes = completed.fold<int>(
+    final totalSeconds = completed.fold<int>(
       0,
-      (sum, r) => sum + (r.actualTime ?? r.estimatedTime),
+      (sum, r) =>
+          sum + (r.actualSeconds ?? r.estimatedTime * 60),
     );
-    final hours = totalMinutes ~/ 60;
-    final minutes = totalMinutes % 60;
+    final duration = Duration(seconds: totalSeconds);
+    final timeLabel = duration.inHours > 0
+        ? '${duration.inHours}\uC2DC\uAC04 ${duration.inMinutes % 60}\uBD84'
+        : duration.inMinutes > 0
+            ? '${duration.inMinutes}\uBD84 ${duration.inSeconds % 60}\uCD08'
+            : '${duration.inSeconds}\uCD08';
 
     final onTimeCount = completed
-        .where((r) => (r.actualTime ?? r.estimatedTime) <= r.estimatedTime)
+        .where((r) =>
+            (r.actualSeconds ?? r.estimatedTime * 60) <=
+            r.estimatedTime * 60)
         .length;
 
     final todoCount =
         routines.where((r) => r.status == RoutineStatus.todo).length;
     final inProgressCount =
         routines.where((r) => r.status == RoutineStatus.inProgress).length;
-    final doneCount =
-        routines.where((r) => r.status == RoutineStatus.done).length;
+    final doneCount = completed.length;
 
     final chartSections = _buildChartSections(
       todo: todoCount,
@@ -46,273 +51,92 @@ class StatisticsView extends ConsumerWidget {
       done: doneCount,
     );
 
-    final todayText = _todayLabel();
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: const Color(0xFFF4F4F7),
       body: SafeArea(
-        child: Column(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           children: [
-            // 상단 iOS 스타일 네비
-            Container(
-              padding: const EdgeInsets.only(
-                  left: 20, right: 20, top: 8, bottom: 12),
-              color: const Color(0xFFF2F2F7),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        '통계',
-                        style: TextStyle(
-                          fontSize: 34,
-                          height: 1.1,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          // TODO: 데일리 요약 바텀시트 연결
-                        },
-                        child: const Text(
-                          '요약보기',
-                          style: TextStyle(
-                            color: Color(0xFF007AFF),
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    todayText,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
+            _Header(dateLabel: _todayLabel()),
+            const SizedBox(height: 16),
+            GridView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1.4,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
               ),
+              children: [
+                _StatCard(
+                  icon: Icons.flag_rounded,
+                  label: '\uC644\uB8CC\uC728',
+                  value: '$completionRate%',
+                  iconBg: const Color(0xFFE8FBF1),
+                  iconColor: const Color(0xFF2ECC71),
+                ),
+                _StatCard(
+                  icon: Icons.bolt_rounded,
+                  label: '\uD3C9\uADE0 \uC9D9\uC810\uB3C4',
+                  value: avgFocus,
+                  iconBg: const Color(0xFFE3F2FF),
+                  iconColor: const Color(0xFF007AFF),
+                ),
+                _StatCard(
+                  icon: Icons.access_time_filled_rounded,
+                  label: '\uCD1D \uC9D9\uC810 \uC2DC\uAC04',
+                  value: timeLabel,
+                  iconBg: const Color(0xFFF3E8FF),
+                  iconColor: const Color(0xFF8E5CFF),
+                ),
+                _StatCard(
+                  icon: Icons.emoji_events_rounded,
+                  label: '\uC81C\uC2DC\uAC04 \uC644\uB8CC',
+                  value: '$onTimeCount\uD68C',
+                  iconBg: const Color(0xFFFFF3E0),
+                  iconColor: const Color(0xFFFF9F0A),
+                ),
+              ],
             ),
-
-            Expanded(
-              child: ListView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                children: [
-                  // 도넛 차트 카드
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x11000000),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '진행률',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 200,
-                          child: Stack(
-                            children: [
-                              PieChart(
-                                PieChartData(
-                                  sections: chartSections,
-                                  centerSpaceRadius: 60,
-                                  sectionsSpace: 2,
-                                ),
-                              ),
-                              Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      '$completionRate%',
-                                      style: const TextStyle(
-                                        fontSize: 32,
-                                        color: Color(0xFF007AFF),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      '완료율',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _LegendDot(
-                              color: const Color(0xFF8E8E93),
-                              label: '대기 $todoCount',
-                            ),
-                            _LegendDot(
-                              color: const Color(0xFFFF9500),
-                              label: '진행 $inProgressCount',
-                            ),
-                            _LegendDot(
-                              color: const Color(0xFF34C759),
-                              label: '완료 $doneCount',
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 네 개의 통계 카드
-                  GridView.count(
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    children: [
-                      _StatCard(
-                        icon: Icons.flag_rounded,
-                        iconBg: const Color(0xFFE4FBEA),
-                        iconColor: const Color(0xFF34C759),
-                        value: '$completionRate%',
-                        label: '완료율',
-                      ),
-                      _StatCard(
-                        icon: Icons.bolt_rounded,
-                        iconBg: const Color(0xFFE3F2FF),
-                        iconColor: const Color(0xFF007AFF),
-                        value: avgFocus,
-                        label: '평균 집중도',
-                      ),
-                      _StatCard(
-                        icon: Icons.access_time_filled_rounded,
-                        iconBg: const Color(0xFFF3E8FF),
-                        iconColor: const Color(0xFF8E5CFF),
-                        value:
-                            hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m',
-                        label: '총 소요시간',
-                      ),
-                      _StatCard(
-                        icon: Icons.emoji_events_rounded,
-                        iconBg: const Color(0xFFFFF3E0),
-                        iconColor: const Color(0xFFFF9500),
-                        value: '$onTimeCount',
-                        label: '시간 준수',
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  if (completed.isNotEmpty)
-                    _TopFocusRoutinesSection(routines: completed),
-                ],
-              ),
-            ),
+            const SizedBox(height: 20),
+            _ChartCard(sections: chartSections),
+            const SizedBox(height: 20),
+            _TopFocusRoutinesSection(routines: completed),
           ],
         ),
       ),
     );
   }
-
-  List<PieChartSectionData> _buildChartSections({
-    required int todo,
-    required int inProgress,
-    required int done,
-  }) {
-    final total = todo + inProgress + done;
-    if (total == 0) {
-      return [
-        PieChartSectionData(
-          value: 1,
-          color: const Color(0xFFE5E7EB),
-          radius: 40,
-        ),
-      ];
-    }
-
-    return [
-      if (done > 0)
-        PieChartSectionData(
-          value: done.toDouble(),
-          color: const Color(0xFF34C759),
-          radius: 40,
-        ),
-      if (inProgress > 0)
-        PieChartSectionData(
-          value: inProgress.toDouble(),
-          color: const Color(0xFFFF9500),
-          radius: 40,
-        ),
-      if (todo > 0)
-        PieChartSectionData(
-          value: todo.toDouble(),
-          color: const Color(0xFF8E8E93),
-          radius: 40,
-        ),
-    ];
-  }
-
-  String _todayLabel() {
-    final now = DateTime.now();
-    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-    final weekday = weekdays[now.weekday - 1];
-    return '${now.month}월 ${now.day}일 $weekday요일';
-  }
 }
 
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
+class _Header extends StatelessWidget {
+  const _Header({required this.dateLabel});
 
-  const _LegendDot({required this.color, required this.label});
+  final String dateLabel;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '\uD1B5\uACC4',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Icon(Icons.bar_chart_rounded, color: Color(0xFF6366F1)),
+          ],
         ),
-        const SizedBox(width: 4),
+        const SizedBox(height: 4),
         Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: Colors.grey),
+          dateLabel,
+          style: const TextStyle(fontSize: 13, color: Colors.grey),
         ),
       ],
     );
@@ -320,32 +144,32 @@ class _LegendDot extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconBg;
-  final Color iconColor;
-  final String value;
-  final String label;
-
   const _StatCard({
     required this.icon,
+    required this.label,
+    required this.value,
     required this.iconBg,
     required this.iconColor,
-    required this.value,
-    required this.label,
   });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color iconBg;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
+        borderRadius: BorderRadius.all(Radius.circular(20)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x11000000),
-            blurRadius: 8,
-            offset: Offset(0, 4),
+            color: Color(0x12000000),
+            blurRadius: 12,
+            offset: Offset(0, 6),
           ),
         ],
       ),
@@ -353,23 +177,19 @@ class _StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: iconBg,
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 18,
-            ),
+            child: Icon(icon, color: iconColor),
           ),
           const SizedBox(height: 12),
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: iconColor,
             ),
@@ -377,10 +197,7 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.grey,
-            ),
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
           ),
         ],
       ),
@@ -388,99 +205,205 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _TopFocusRoutinesSection extends StatelessWidget {
-  final List<Routine> routines;
+class _ChartCard extends StatelessWidget {
+  const _ChartCard({required this.sections});
 
-  const _TopFocusRoutinesSection({required this.routines});
+  final List<PieChartSectionData> sections;
 
   @override
   Widget build(BuildContext context) {
-    final sorted = [...routines]
-      ..sort((a, b) => b.focusLevel.compareTo(a.focusLevel));
-    final top5 = sorted.take(5).toList();
-
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
+        borderRadius: BorderRadius.all(Radius.circular(24)),
+        boxShadow: [
           BoxShadow(
             color: Color(0x11000000),
-            blurRadius: 8,
-            offset: Offset(0, 4),
+            blurRadius: 12,
+            offset: Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Text(
+            '\uC0C1\uD0DC \uBD84\uD3EC',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 220,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 2,
+                centerSpaceRadius: 50,
+                sections: sections,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Wrap(
+            spacing: 12,
+            children: [
+              _LegendDot(color: Color(0xFFE2E8F0), label: '\uB300\uAE30'),
+              _LegendDot(color: Color(0xFF6366F1), label: '\uC9C4\uD589 \uC911'),
+              _LegendDot(color: Color(0xFF34C759), label: '\uC644\uB8CC'),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+}
+
+class _TopFocusRoutinesSection extends StatelessWidget {
+  const _TopFocusRoutinesSection({required this.routines});
+
+  final List<Routine> routines;
+
+  @override
+  Widget build(BuildContext context) {
+    if (routines.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.all(Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x11000000),
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Text(
+          '\uC644\uB8CC\uB41C \uB8E8\uD2F4\uC774 \uC544\uC9C1 \uC5C6\uC5B4\uC694.',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    final sorted = [...routines]
+      ..sort((a, b) => b.focusLevel.compareTo(a.focusLevel));
+    final top5 = sorted.take(5).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
               Icon(Icons.trending_up, size: 18, color: Colors.grey),
               SizedBox(width: 6),
               Text(
-                '최고 집중 루틴',
+                '\uCD5C\uACE0 \uC9D9\uC810 \uB8E8\uD2F4',
                 style: TextStyle(
-                  fontSize: 17,
                   fontWeight: FontWeight.w600,
+                  fontSize: 16,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           ...top5.asMap().entries.map((entry) {
-            final index = entry.key;
+            final index = entry.key + 1;
             final routine = entry.value;
-            final duration = routine.actualTime ?? routine.estimatedTime;
+            final seconds =
+                routine.actualSeconds ?? routine.estimatedTime * 60;
+            final label = seconds >= 60
+                ? '${seconds ~/ 60}\uBD84 ${seconds % 60}\uCD08'
+                : '$seconds\uCD08';
 
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F7),
-                borderRadius: BorderRadius.circular(8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F5F7),
+                borderRadius: BorderRadius.all(Radius.circular(16)),
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FF),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    alignment: Alignment.center,
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: const Color(0xFFE0E7FF),
                     child: Text(
-                      '${index + 1}',
+                      '$index',
                       style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF007AFF),
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
+                        color: Color(0xFF4C54D2),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      routine.title,
-                      style: const TextStyle(fontSize: 15),
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          routine.title,
+                          style: const TextStyle(fontSize: 14),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Lv.${routine.focusLevel}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 8),
                   Text(
-                    'Lv.${routine.focusLevel}',
+                    label,
                     style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF007AFF),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${duration}분',
-                    style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: Colors.grey,
                     ),
                   ),
@@ -492,4 +415,53 @@ class _TopFocusRoutinesSection extends StatelessWidget {
       ),
     );
   }
+}
+
+List<PieChartSectionData> _buildChartSections({
+  required int todo,
+  required int inProgress,
+  required int done,
+}) {
+  final total = (todo + inProgress + done).clamp(1, 1 << 30);
+
+  return [
+    PieChartSectionData(
+      color: const Color(0xFFE2E8F0),
+      value: todo.toDouble(),
+      title: '${((todo / total) * 100).round()}%',
+      titleStyle: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF475569),
+      ),
+      radius: 60,
+    ),
+    PieChartSectionData(
+      color: const Color(0xFF6366F1),
+      value: inProgress.toDouble(),
+      title: '${((inProgress / total) * 100).round()}%',
+      titleStyle: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+      radius: 70,
+    ),
+    PieChartSectionData(
+      color: const Color(0xFF34C759),
+      value: done.toDouble(),
+      title: '${((done / total) * 100).round()}%',
+      titleStyle: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+      radius: 65,
+    ),
+  ];
+}
+
+String _todayLabel() {
+  final now = DateTime.now();
+  return '${now.year}\uB144 ${now.month}\uC6D4 ${now.day}\uC77C';
 }

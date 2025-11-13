@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../models/routine.dart';
 import '../widgets/routine_card.dart';
+import '../widgets/routine_form_sheet.dart';
 
 class HomeView extends ConsumerWidget {
   const HomeView({super.key});
@@ -12,141 +14,154 @@ class HomeView extends ConsumerWidget {
     final todo = routines.where((r) => r.status == RoutineStatus.todo).toList();
     final inProgress =
         routines.where((r) => r.status == RoutineStatus.inProgress).toList();
-    final done = routines.where((r) => r.status == RoutineStatus.done).toList();
+    final done =
+        routines.where((r) => r.status == RoutineStatus.done).toList();
 
     final total = routines.length;
-    final doneCount = done.length;
-    final completionRate = total == 0 ? 0.0 : doneCount / total;
+    final completionRate = total == 0 ? 0.0 : done.length / total;
 
-    return SingleChildScrollView(
+    return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 상단 "오늘" + 날짜 + 플로팅 플러스 버튼
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '오늘',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _dateText(),
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
+      children: [
+        _Header(
+          dateLabel: _dateText(),
+          onAdd: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              InkWell(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(24)),
-                    ),
-                    builder: (context) => const AddRoutineSheet(),
-                  );
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0xFF6366F1),
-                  ),
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+              builder: (context) => const RoutineFormSheet(),
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        _TodayProgressCard(
+          completionRate: completionRate,
+          waitingCount: todo.length,
+          inProgressCount: inProgress.length,
+          doneCount: done.length,
+        ),
+        const SizedBox(height: 24),
+        if (inProgress.isNotEmpty || todo.isNotEmpty) ...[
+          const _SectionHeader(title: '\uC9C4\uD589 \uC911 \uB8E8\uD2F4'),
+          const SizedBox(height: 12),
+          ...inProgress.map(
+            (routine) => RoutineCard(
+              routine: routine,
+              style: RoutineCardStyle.running,
+            ),
           ),
-          const SizedBox(height: 20),
-
-          // "오늘의 진행" 카드
-          _TodayProgressCard(
-            completionRate: completionRate,
-            waitingCount: todo.length,
-            inProgressCount: inProgress.length,
-            doneCount: done.length,
+          ...todo.map(
+            (routine) => RoutineCard(
+              routine: routine,
+              style: RoutineCardStyle.normal,
+            ),
           ),
-
-          const SizedBox(height: 24),
-
-          // 진행할 루틴 섹션
-          if (inProgress.isNotEmpty || todo.isNotEmpty) ...[
-            const _SectionHeader(title: '진행할 루틴'),
-            const SizedBox(height: 12),
-            ...inProgress.map(
-              (r) => RoutineCard(
-                routine: r,
-                style: RoutineCardStyle.running,
-              ),
-            ),
-            ...todo.map(
-              (r) => RoutineCard(
-                routine: r,
-                style: RoutineCardStyle.normal,
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 24),
-
-          // 완료된 루틴
-          if (done.isNotEmpty) ...[
-            const _SectionHeader(title: '완료됨'),
-            const SizedBox(height: 12),
-            ...done.map(
-              (r) => RoutineCard(
-                routine: r,
-                style: RoutineCardStyle.completed,
-              ),
-            ),
-          ],
-
           const SizedBox(height: 24),
         ],
-      ),
+        if (done.isNotEmpty) ...[
+          const _SectionHeader(title: '\uC644\uB8CC\uB41C \uB8E8\uD2F4'),
+          const SizedBox(height: 12),
+          ...done.map(
+            (routine) => RoutineCard(
+              routine: routine,
+              style: RoutineCardStyle.completed,
+            ),
+          ),
+        ],
+        if (routines.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(top: 40),
+            child: _EmptyState(),
+          ),
+      ],
     );
   }
 
   String _dateText() {
     final now = DateTime.now();
-    const weekdayKo = ['월', '화', '수', '목', '금', '토', '일'];
+    const weekdayKo = [
+      '\uC6D4',
+      '\uD654',
+      '\uC218',
+      '\uBAA9',
+      '\uAE08',
+      '\uD1A0',
+      '\uC77C'
+    ];
     final weekday = weekdayKo[now.weekday - 1];
-    return '${now.month}월 ${now.day}일 $weekday요일';
+    return '${now.month}\uC6D4 ${now.day}\uC77C $weekday\uC694\uC77C';
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.onAdd, required this.dateLabel});
+
+  final VoidCallback onAdd;
+  final String dateLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '\uC624\uB298',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                dateLabel,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+        InkWell(
+          onTap: onAdd,
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFF6366F1),
+            ),
+            child: const Icon(
+              Icons.add,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
 class _TodayProgressCard extends StatelessWidget {
-  final double completionRate;
-  final int waitingCount;
-  final int inProgressCount;
-  final int doneCount;
-
   const _TodayProgressCard({
     required this.completionRate,
     required this.waitingCount,
     required this.inProgressCount,
     required this.doneCount,
   });
+
+  final double completionRate;
+  final int waitingCount;
+  final int inProgressCount;
+  final int doneCount;
 
   @override
   Widget build(BuildContext context) {
@@ -155,24 +170,23 @@ class _TodayProgressCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 12,
-            offset: Offset(0, 6),
+            color: Color(0x16000000),
+            blurRadius: 20,
+            offset: Offset(0, 10),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 상단 텍스트 라인
           Row(
             children: [
               const Text(
-                '오늘의 진행',
+                '\uC624\uB298\uC758 \uC9C4\uD589',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -180,9 +194,9 @@ class _TodayProgressCard extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '상세보기',
+                '\uC790\uC138\uD788 \uBCF4\uAE30',
                 style: TextStyle(
-                  color: const Color(0xFF6366F1),
+                  color: Colors.grey[600],
                   fontSize: 12,
                 ),
               ),
@@ -192,7 +206,7 @@ class _TodayProgressCard extends StatelessWidget {
           Row(
             children: [
               const Text(
-                '완료율',
+                '\uC644\uB8CC\uC728',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const Spacer(),
@@ -200,43 +214,39 @@ class _TodayProgressCard extends StatelessWidget {
                 '$percentText%',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 24,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          // 진행 막대
+          const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
-              value: completionRate,
-              minHeight: 6,
-              backgroundColor: const Color(0xFFE5E7EB),
+              value: completionRate.clamp(0.0, 1.0),
+              minHeight: 10,
+              backgroundColor: const Color(0xFFEAEAEA),
               valueColor: const AlwaysStoppedAnimation(Color(0xFF8B5CF6)),
             ),
           ),
-
-          const SizedBox(height: 16),
-
-          // 상태 3개
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const _StatusColumn(
-                label: '대기중',
-                color: Color(0xFF4B5563),
+              _StatusColumn(
+                label: '\uB300\uAE30 \uC911',
+                count: waitingCount,
+                color: const Color(0xFF94A3B8),
               ),
               _StatusColumn(
-                label: '진행중',
-                color: const Color(0xFF6366F1),
+                label: '\uC9C4\uD589 \uC911',
                 count: inProgressCount,
+                color: const Color(0xFF6366F1),
               ),
               _StatusColumn(
-                label: '완료',
-                color: const Color(0xFF22C55E),
+                label: '\uC644\uB8CC',
                 count: doneCount,
+                color: const Color(0xFF22C55E),
               ),
             ],
           ),
@@ -247,15 +257,15 @@ class _TodayProgressCard extends StatelessWidget {
 }
 
 class _StatusColumn extends StatelessWidget {
+  const _StatusColumn({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
   final String label;
   final int count;
   final Color color;
-
-  const _StatusColumn({
-    required this.label,
-    required this.color,
-    this.count = 0,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -264,12 +274,12 @@ class _StatusColumn extends StatelessWidget {
         Text(
           '$count',
           style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
             color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           label,
           style: const TextStyle(
@@ -283,190 +293,69 @@ class _StatusColumn extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  final String title;
-
   const _SectionHeader({required this.title});
 
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 16,
-      ),
-    );
-  }
-}
-
-/// 루틴 추가 바텀시트
-class AddRoutineSheet extends ConsumerStatefulWidget {
-  const AddRoutineSheet({super.key});
-
-  @override
-  ConsumerState<AddRoutineSheet> createState() => _AddRoutineSheetState();
-}
-
-class _AddRoutineSheetState extends ConsumerState<AddRoutineSheet> {
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  double _focusLevel = 3;
-  int _estimatedMinutes = 25;
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final title = _titleController.text.trim();
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제목을 입력해주세요.')),
-      );
-      return;
-    }
-
-    final notifier = ref.read(routinesProvider.notifier);
-    final now = DateTime.now();
-    final routine = Routine(
-      id: now.millisecondsSinceEpoch.toString(),
-      title: title,
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      focusLevel: _focusLevel.round(),
-      estimatedTime: _estimatedMinutes,
-      status: RoutineStatus.todo,
-      createdAt: now,
-    );
-
-    notifier.addRoutine(routine);
-    Navigator.of(context).pop();
-  }
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: bottomInset + 16,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
-            const Text(
-              '새 루틴 추가',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: '제목',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _descriptionController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: '설명 (선택)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '집중 레벨',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: Slider(
-                    value: _focusLevel,
-                    min: 1,
-                    max: 5,
-                    divisions: 4,
-                    label: _focusLevel.round().toString(),
-                    onChanged: (v) => setState(() => _focusLevel = v),
-                  ),
-                ),
-                Text('Lv.${_focusLevel.round()}'),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '예상 시간(분)',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: Slider(
-                    value: _estimatedMinutes.toDouble(),
-                    min: 5,
-                    max: 120,
-                    divisions: 23,
-                    label: '$_estimatedMinutes분',
-                    onChanged: (v) =>
-                        setState(() => _estimatedMinutes = v.round()),
-                  ),
-                ),
-                SizedBox(
-                  width: 48,
-                  child: Text(
-                    '$_estimatedMinutes분',
-                    textAlign: TextAlign.right,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  '추가하기',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
+    return Row(
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Divider(
+            thickness: 0.6,
+            color: Color(0xFFE2E8F0),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF4F4F7),
+        borderRadius: BorderRadius.all(Radius.circular(24)),
+      ),
+      child: const Column(
+        children: [
+          Icon(
+            Icons.nightlight_round,
+            size: 40,
+            color: Color(0xFF94A3B8),
+          ),
+          SizedBox(height: 12),
+          Text(
+            '\uC624\uB298\uC758 \uB8E8\uD2F4\uC744 \uCD94\uAC00\uD574 \uBCF4\uC138\uC694',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            '\uB8E8\uD2F4\uC744 \uB4F1\uB85D\uD558\uBA74 \uC790\uB3D9\uC73C\uB85C \uC9C4\uD589 \uD604\uD669\uC774 \uC815\uB9AC\uB429\uB2C8\uB2E4.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+        ],
       ),
     );
   }

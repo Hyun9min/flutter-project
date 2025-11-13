@@ -1,57 +1,82 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 class RoutineTimer extends StatefulWidget {
-  final DateTime startTime;
-  final int estimatedMinutes;
-
   const RoutineTimer({
     super.key,
-    required this.startTime,
-    required this.estimatedMinutes,
+    required this.accumulatedSeconds,
+    required this.runningSince,
+    required this.estimatedSeconds,
   });
+
+  final int accumulatedSeconds;
+  final DateTime? runningSince;
+  final int estimatedSeconds;
 
   @override
   State<RoutineTimer> createState() => _RoutineTimerState();
 }
 
 class _RoutineTimerState extends State<RoutineTimer> {
-  late Timer _timer;
-  Duration _elapsed = Duration.zero;
+  Timer? _ticker;
 
   @override
   void initState() {
     super.initState();
-    _elapsed = DateTime.now().difference(widget.startTime);
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        _elapsed = DateTime.now().difference(widget.startTime);
+    _setupTicker();
+  }
+
+  @override
+  void didUpdateWidget(RoutineTimer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.runningSince != widget.runningSince) {
+      _setupTicker();
+    }
+  }
+
+  void _setupTicker() {
+    _ticker?.cancel();
+    if (widget.runningSince != null) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) {
+          setState(() {});
+        }
       });
-    });
+    }
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _ticker?.cancel();
     super.dispose();
+  }
+
+  int get _elapsedSeconds {
+    if (widget.runningSince == null) {
+      return widget.accumulatedSeconds;
+    }
+    final diff = DateTime.now().difference(widget.runningSince!).inSeconds;
+    return widget.accumulatedSeconds + diff;
+  }
+
+  String get _clockText {
+    final minutes = _elapsedSeconds ~/ 60;
+    final seconds = _elapsedSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final seconds = _elapsed.inSeconds;
-    final minutes = seconds ~/ 60;
-    final sec = seconds % 60;
-
-    final estimatedSeconds = widget.estimatedMinutes * 60;
-    final isOvertime = seconds > estimatedSeconds && estimatedSeconds > 0;
-    final progress = estimatedSeconds == 0
+    final estimated = widget.estimatedSeconds;
+    final progress = estimated == 0
         ? 0.0
-        : (seconds / estimatedSeconds).clamp(0.0, 1.0);
-
-    final timeText =
-        '${minutes.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
-
-    final barColor = isOvertime ? Colors.red : const Color(0xFF2563EB);
+        : (_elapsedSeconds / estimated).clamp(0.0, 1.0);
+    final isOvertime =
+        estimated > 0 && _elapsedSeconds > estimated;
+    final isPaused = widget.runningSince == null;
+    final barColor =
+        isOvertime ? Colors.red : const Color(0xFF2563EB);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,23 +87,29 @@ class _RoutineTimerState extends State<RoutineTimer> {
             Row(
               children: [
                 Icon(
-                  Icons.access_time,
+                  isPaused ? Icons.pause_circle_filled : Icons.access_time,
                   size: 16,
-                  color: isOvertime ? Colors.red : const Color(0xFF2563EB),
+                  color: isPaused
+                      ? Colors.grey
+                      : (isOvertime ? Colors.red : const Color(0xFF2563EB)),
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  timeText,
+                  _clockText,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: isOvertime ? Colors.red : const Color(0xFF2563EB),
+                    color: isPaused
+                        ? Colors.grey[600]
+                        : (isOvertime
+                            ? Colors.red
+                            : const Color(0xFF2563EB)),
                   ),
                 ),
               ],
             ),
             Text(
-              '목표: ${widget.estimatedMinutes}분',
+              '\uBAA9\uD45C ${estimated ~/ 60}\uBD84',
               style: const TextStyle(
                 fontSize: 12,
                 color: Colors.grey,
@@ -96,10 +127,19 @@ class _RoutineTimerState extends State<RoutineTimer> {
             valueColor: AlwaysStoppedAnimation(barColor),
           ),
         ),
-        if (isOvertime) ...[
+        if (isPaused) ...[
           const SizedBox(height: 4),
           const Text(
-            '⚠️ 예상 시간을 초과했습니다',
+            '\uC77C\uC2DC\uC815\uC9C0 \uC911',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey,
+            ),
+          ),
+        ] else if (isOvertime) ...[
+          const SizedBox(height: 4),
+          const Text(
+            '\u26A0\uFE0F \uC608\uC0C1 \uC2DC\uAC04\uC744 \uCD08\uACFC\uD588\uC5B4\uC694',
             style: TextStyle(
               fontSize: 11,
               color: Colors.red,

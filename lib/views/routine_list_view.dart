@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../models/routine.dart';
 import '../widgets/routine_card.dart';
 
@@ -13,18 +14,19 @@ class RoutineListView extends ConsumerWidget {
     final todo = routines.where((r) => r.status == RoutineStatus.todo).toList();
     final inProgress =
         routines.where((r) => r.status == RoutineStatus.inProgress).toList();
-    final done = routines.where((r) => r.status == RoutineStatus.done).toList();
+    final done =
+        routines.where((r) => r.status == RoutineStatus.done).toList();
 
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         _Section(
-          title: '할 일',
+          title: '\uB300\uAE30',
           count: todo.length,
           children: todo
-              .map<Widget>(
-                (r) => RoutineCard(
-                  routine: r,
+              .map(
+                (routine) => RoutineCard(
+                  routine: routine,
                   style: RoutineCardStyle.normal,
                 ),
               )
@@ -32,12 +34,12 @@ class RoutineListView extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _Section(
-          title: '진행 중',
+          title: '\uC9C4\uD589 \uC911',
           count: inProgress.length,
           children: inProgress
-              .map<Widget>(
-                (r) => RoutineCard(
-                  routine: r,
+              .map(
+                (routine) => RoutineCard(
+                  routine: routine,
                   style: RoutineCardStyle.running,
                 ),
               )
@@ -45,12 +47,12 @@ class RoutineListView extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _Section(
-          title: '완료',
+          title: '\uC644\uB8CC',
           count: done.length,
           children: done
-              .map<Widget>(
-                (r) => RoutineCard(
-                  routine: r,
+              .map(
+                (routine) => RoutineCard(
+                  routine: routine,
                   style: RoutineCardStyle.completed,
                 ),
               )
@@ -62,15 +64,15 @@ class RoutineListView extends ConsumerWidget {
 }
 
 class _Section extends StatelessWidget {
-  final String title;
-  final int count;
-  final List<Widget> children;
-
   const _Section({
     required this.title,
     required this.count,
     required this.children,
   });
+
+  final String title;
+  final int count;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +90,7 @@ class _Section extends StatelessWidget {
               ),
             ),
             Text(
-              '$count개',
+              '$count\uAC1C',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[600],
