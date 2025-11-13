@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'routine_timer.dart';
 import '../models/routine.dart';
 
 /// Figma 스타일에 맞게 카드 모양을 조금 더 세분화
 enum RoutineCardStyle {
   normal, // 기본 대기/일반 카드
-  running, // 진행중 (파란 버튼/바)
-  completed, // 완료 (녹색)
+  running, // 진행중
+  completed, // 완료
 }
 
 class RoutineCard extends ConsumerWidget {
@@ -26,43 +27,39 @@ class RoutineCard extends ConsumerWidget {
       case RoutineCardStyle.completed:
         return const Color(0xFF16A34A); // 초록
       case RoutineCardStyle.normal:
-      default:
-        return const Color(0xFFF97316); // 주황 (중요/불꽃 느낌)
+        return const Color(0xFFF97316); // 주황
     }
   }
 
   String get _statusBadgeText {
     switch (style) {
       case RoutineCardStyle.running:
-        return '중간';
+        return '진행중';
       case RoutineCardStyle.completed:
-        return '보통';
+        return '완료';
       case RoutineCardStyle.normal:
-      default:
-        return '홀로';
+        return '대기';
     }
   }
 
   Color get _statusBadgeColor {
     switch (style) {
       case RoutineCardStyle.running:
-        return const Color(0xFFFACC15); // 노랑
+        return const Color(0xFF6366F1);
       case RoutineCardStyle.completed:
-        return const Color(0xFF4ADE80); // 연한 초록
+        return const Color(0xFF22C55E);
       case RoutineCardStyle.normal:
-      default:
-        return const Color(0xFFF97316); // 주황
+        return const Color(0xFFF97316);
     }
   }
 
   String get _actionText {
     switch (style) {
       case RoutineCardStyle.running:
-        return '일시정지';
+        return '완료';
       case RoutineCardStyle.completed:
         return '완료됨';
       case RoutineCardStyle.normal:
-      default:
         return '시작';
     }
   }
@@ -74,14 +71,37 @@ class RoutineCard extends ConsumerWidget {
       case RoutineCardStyle.completed:
         return const Color(0xFF16A34A);
       case RoutineCardStyle.normal:
-      default:
         return const Color(0xFF2563EB);
+    }
+  }
+
+  void _onPrimaryPressed(WidgetRef ref) {
+    final notifier = ref.read(routinesProvider.notifier);
+
+    switch (style) {
+      case RoutineCardStyle.normal:
+        // 대기 → 진행중
+        notifier.startRoutine(routine);
+        break;
+      case RoutineCardStyle.running:
+        // 진행중 → 완료
+        notifier.completeRoutine(routine);
+        break;
+      case RoutineCardStyle.completed:
+        // 완료 카드는 버튼이 없으니까 여기 안 옴
+        break;
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final durationText = '${routine.estimatedTime}분';
+
+    final progressValue = switch (style) {
+      RoutineCardStyle.normal => 0.0,
+      RoutineCardStyle.running => 0.5,
+      RoutineCardStyle.completed => 1.0,
+    };
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -140,6 +160,15 @@ class RoutineCard extends ConsumerWidget {
               ),
             ],
           ),
+          if (routine.status == RoutineStatus.inProgress &&
+              routine.startTime != null) ...[
+            const SizedBox(height: 8),
+            RoutineTimer(
+              startTime: routine.startTime!,
+              estimatedMinutes: routine.estimatedTime,
+            ),
+            const SizedBox(height: 8),
+          ],
 
           if (routine.description != null &&
               routine.description!.isNotEmpty) ...[
@@ -155,13 +184,11 @@ class RoutineCard extends ConsumerWidget {
 
           const SizedBox(height: 12),
 
-          // 상단 진행 바 (진행중 카드일 때만 보여줘도 되고, 지금은 전부)
+          // 진행 바
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
-              value: style == RoutineCardStyle.completed
-                  ? 1
-                  : (style == RoutineCardStyle.running ? 0.5 : 0.0),
+              value: progressValue,
               minHeight: 6,
               backgroundColor: const Color(0xFFE5E7EB),
               valueColor: AlwaysStoppedAnimation(_accentColor),
@@ -191,6 +218,7 @@ class RoutineCard extends ConsumerWidget {
                 _PrimaryActionButton(
                   label: _actionText,
                   color: _actionColor,
+                  onTap: () => _onPrimaryPressed(ref),
                 )
               else
                 _CompletedChip(color: _accentColor),
@@ -205,38 +233,44 @@ class RoutineCard extends ConsumerWidget {
 class _PrimaryActionButton extends StatelessWidget {
   final String label;
   final Color color;
+  final VoidCallback onTap;
 
   const _PrimaryActionButton({
     required this.label,
     required this.color,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.play_arrow_rounded,
-            size: 18,
-            color: Colors.white,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.play_arrow_rounded,
+              size: 18,
               color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
             ),
-          ),
-        ],
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

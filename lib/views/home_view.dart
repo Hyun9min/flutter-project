@@ -49,16 +49,30 @@ class HomeView extends ConsumerWidget {
                   ],
                 ),
               ),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF6366F1),
-                ),
-                child: const Icon(
-                  Icons.add,
-                  color: Colors.white,
+              InkWell(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    builder: (context) => const AddRoutineSheet(),
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF6366F1),
+                  ),
+                  child: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
@@ -77,12 +91,12 @@ class HomeView extends ConsumerWidget {
 
           // 진행할 루틴 섹션
           if (inProgress.isNotEmpty || todo.isNotEmpty) ...[
-            _SectionHeader(title: '진행할 루틴'),
+            const _SectionHeader(title: '진행할 루틴'),
             const SizedBox(height: 12),
             ...inProgress.map(
               (r) => RoutineCard(
                 routine: r,
-                style: RoutineCardStyle.running, // 아래에서 새로 정의
+                style: RoutineCardStyle.running,
               ),
             ),
             ...todo.map(
@@ -97,7 +111,7 @@ class HomeView extends ConsumerWidget {
 
           // 완료된 루틴
           if (done.isNotEmpty) ...[
-            _SectionHeader(title: '완료됨'),
+            const _SectionHeader(title: '완료됨'),
             const SizedBox(height: 12),
             ...done.map(
               (r) => RoutineCard(
@@ -117,7 +131,7 @@ class HomeView extends ConsumerWidget {
     final now = DateTime.now();
     const weekdayKo = ['월', '화', '수', '목', '금', '토', '일'];
     final weekday = weekdayKo[now.weekday - 1];
-    return '${now.month}월 ${now.day}일 ${weekday}요일';
+    return '${now.month}월 ${now.day}일 $weekday요일';
   }
 }
 
@@ -210,20 +224,19 @@ class _TodayProgressCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _StatusColumn(
+              const _StatusColumn(
                 label: '대기중',
-                count: waitingCount,
-                color: const Color(0xFF4B5563),
+                color: Color(0xFF4B5563),
               ),
               _StatusColumn(
                 label: '진행중',
-                count: inProgressCount,
                 color: const Color(0xFF6366F1),
+                count: inProgressCount,
               ),
               _StatusColumn(
                 label: '완료',
-                count: doneCount,
                 color: const Color(0xFF22C55E),
+                count: doneCount,
               ),
             ],
           ),
@@ -240,8 +253,8 @@ class _StatusColumn extends StatelessWidget {
 
   const _StatusColumn({
     required this.label,
-    required this.count,
     required this.color,
+    this.count = 0,
   });
 
   @override
@@ -281,6 +294,179 @@ class _SectionHeader extends StatelessWidget {
       style: const TextStyle(
         fontWeight: FontWeight.bold,
         fontSize: 16,
+      ),
+    );
+  }
+}
+
+/// 루틴 추가 바텀시트
+class AddRoutineSheet extends ConsumerStatefulWidget {
+  const AddRoutineSheet({super.key});
+
+  @override
+  ConsumerState<AddRoutineSheet> createState() => _AddRoutineSheetState();
+}
+
+class _AddRoutineSheetState extends ConsumerState<AddRoutineSheet> {
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  double _focusLevel = 3;
+  int _estimatedMinutes = 25;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('제목을 입력해주세요.')),
+      );
+      return;
+    }
+
+    final notifier = ref.read(routinesProvider.notifier);
+    final now = DateTime.now();
+    final routine = Routine(
+      id: now.millisecondsSinceEpoch.toString(),
+      title: title,
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+      focusLevel: _focusLevel.round(),
+      estimatedTime: _estimatedMinutes,
+      status: RoutineStatus.todo,
+      createdAt: now,
+    );
+
+    notifier.addRoutine(routine);
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 16,
+        bottom: bottomInset + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const Text(
+              '새 루틴 추가',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: '제목',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descriptionController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: '설명 (선택)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '집중 레벨',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: _focusLevel,
+                    min: 1,
+                    max: 5,
+                    divisions: 4,
+                    label: _focusLevel.round().toString(),
+                    onChanged: (v) => setState(() => _focusLevel = v),
+                  ),
+                ),
+                Text('Lv.${_focusLevel.round()}'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '예상 시간(분)',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: _estimatedMinutes.toDouble(),
+                    min: 5,
+                    max: 120,
+                    divisions: 23,
+                    label: '$_estimatedMinutes분',
+                    onChanged: (v) =>
+                        setState(() => _estimatedMinutes = v.round()),
+                  ),
+                ),
+                SizedBox(
+                  width: 48,
+                  child: Text(
+                    '$_estimatedMinutes분',
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6366F1),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  '추가하기',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

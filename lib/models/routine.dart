@@ -84,41 +84,7 @@ class Routine {
 }
 
 class RoutineListNotifier extends StateNotifier<List<Routine>> {
-  RoutineListNotifier()
-      : super([
-          Routine(
-            id: '1',
-            title: '아침 명상',
-            description: '하루를 시작하기 전 10분간 명상',
-            focusLevel: 2,
-            estimatedTime: 10,
-            status: RoutineStatus.done,
-            createdAt: DateTime.now(),
-            startTime: DateTime.now().subtract(const Duration(minutes: 12)),
-            endTime: DateTime.now(),
-            completedAt: DateTime.now(),
-            actualTime: 12,
-          ),
-          Routine(
-            id: '2',
-            title: '프로젝트 기획서 작성',
-            description: 'FocusFlow 앱 초기 기획서 작성',
-            focusLevel: 4,
-            estimatedTime: 90,
-            status: RoutineStatus.inProgress,
-            createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-            startTime: DateTime.now().subtract(const Duration(minutes: 40)),
-          ),
-          Routine(
-            id: '3',
-            title: '운동',
-            description: '가벼운 러닝과 스트레칭',
-            focusLevel: 3,
-            estimatedTime: 45,
-            status: RoutineStatus.todo,
-            createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-          ),
-        ]);
+  RoutineListNotifier() : super([]);
 
   void addRoutine(Routine routine) {
     state = [...state, routine];
@@ -126,7 +92,8 @@ class RoutineListNotifier extends StateNotifier<List<Routine>> {
 
   void updateRoutine(Routine routine) {
     state = [
-      for (final r in state) if (r.id == routine.id) routine else r,
+      for (final r in state)
+        if (r.id == routine.id) routine else r,
     ];
   }
 
@@ -149,7 +116,8 @@ class RoutineListNotifier extends StateNotifier<List<Routine>> {
         status: RoutineStatus.done,
         completedAt: DateTime.now(),
         endTime: DateTime.now(),
-        actualTime: actualMinutes ?? routine.actualTime ?? routine.estimatedTime,
+        actualTime:
+            actualMinutes ?? routine.actualTime ?? routine.estimatedTime,
       ),
     );
   }
