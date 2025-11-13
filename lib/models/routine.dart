@@ -1,25 +1,56 @@
-enum RoutineStatus { todo, doing, done }
+// lib/models/routine.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+enum RoutineStatus { todo, inProgress, done }
+
+extension RoutineStatusLabel on RoutineStatus {
+  String get label {
+    switch (this) {
+      case RoutineStatus.todo:
+        return '할 일';
+      case RoutineStatus.inProgress:
+        return '진행 중';
+      case RoutineStatus.done:
+        return '완료';
+    }
+  }
+
+  String get apiValue {
+    switch (this) {
+      case RoutineStatus.todo:
+        return 'todo';
+      case RoutineStatus.inProgress:
+        return 'in-progress';
+      case RoutineStatus.done:
+        return 'done';
+    }
+  }
+}
 
 class Routine {
   final String id;
   final String title;
   final String? description;
-  final int focusLevel; // 1~5
-  final Duration? expected; // 예정 시간
+  final int focusLevel; // 1-5
+  final int estimatedTime; // minutes
+  final int? actualTime; // minutes
   final RoutineStatus status;
   final DateTime createdAt;
-  final DateTime? startedAt;
+  final DateTime? startTime;
+  final DateTime? endTime;
   final DateTime? completedAt;
 
   const Routine({
     required this.id,
     required this.title,
     this.description,
-    this.focusLevel = 3,
-    this.expected,
-    this.status = RoutineStatus.todo,
+    required this.focusLevel,
+    required this.estimatedTime,
+    this.actualTime,
+    required this.status,
     required this.createdAt,
-    this.startedAt,
+    this.startTime,
+    this.endTime,
     this.completedAt,
   });
 
@@ -28,10 +59,12 @@ class Routine {
     String? title,
     String? description,
     int? focusLevel,
-    Duration? expected,
+    int? estimatedTime,
+    int? actualTime,
     RoutineStatus? status,
     DateTime? createdAt,
-    DateTime? startedAt,
+    DateTime? startTime,
+    DateTime? endTime,
     DateTime? completedAt,
   }) {
     return Routine(
@@ -39,11 +72,90 @@ class Routine {
       title: title ?? this.title,
       description: description ?? this.description,
       focusLevel: focusLevel ?? this.focusLevel,
-      expected: expected ?? this.expected,
+      estimatedTime: estimatedTime ?? this.estimatedTime,
+      actualTime: actualTime ?? this.actualTime,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
-      startedAt: startedAt ?? this.startedAt,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
       completedAt: completedAt ?? this.completedAt,
     );
   }
 }
+
+class RoutineListNotifier extends StateNotifier<List<Routine>> {
+  RoutineListNotifier()
+      : super([
+          Routine(
+            id: '1',
+            title: '아침 명상',
+            description: '하루를 시작하기 전 10분간 명상',
+            focusLevel: 2,
+            estimatedTime: 10,
+            status: RoutineStatus.done,
+            createdAt: DateTime.now(),
+            startTime: DateTime.now().subtract(const Duration(minutes: 12)),
+            endTime: DateTime.now(),
+            completedAt: DateTime.now(),
+            actualTime: 12,
+          ),
+          Routine(
+            id: '2',
+            title: '프로젝트 기획서 작성',
+            description: 'FocusFlow 앱 초기 기획서 작성',
+            focusLevel: 4,
+            estimatedTime: 90,
+            status: RoutineStatus.inProgress,
+            createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+            startTime: DateTime.now().subtract(const Duration(minutes: 40)),
+          ),
+          Routine(
+            id: '3',
+            title: '운동',
+            description: '가벼운 러닝과 스트레칭',
+            focusLevel: 3,
+            estimatedTime: 45,
+            status: RoutineStatus.todo,
+            createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+          ),
+        ]);
+
+  void addRoutine(Routine routine) {
+    state = [...state, routine];
+  }
+
+  void updateRoutine(Routine routine) {
+    state = [
+      for (final r in state) if (r.id == routine.id) routine else r,
+    ];
+  }
+
+  void deleteRoutine(String id) {
+    state = state.where((r) => r.id != id).toList();
+  }
+
+  void startRoutine(Routine routine) {
+    updateRoutine(
+      routine.copyWith(
+        status: RoutineStatus.inProgress,
+        startTime: DateTime.now(),
+      ),
+    );
+  }
+
+  void completeRoutine(Routine routine, {int? actualMinutes}) {
+    updateRoutine(
+      routine.copyWith(
+        status: RoutineStatus.done,
+        completedAt: DateTime.now(),
+        endTime: DateTime.now(),
+        actualTime: actualMinutes ?? routine.actualTime ?? routine.estimatedTime,
+      ),
+    );
+  }
+}
+
+final routinesProvider =
+    StateNotifierProvider<RoutineListNotifier, List<Routine>>((ref) {
+  return RoutineListNotifier();
+});

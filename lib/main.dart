@@ -1,118 +1,101 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'providers/routine_provider.dart';
-import 'screens/home_screen.dart';
-import 'screens/list_screen.dart';
-import 'screens/kanban_screen.dart';
-import 'screens/stats_screen.dart';
+import 'views/home_view.dart';
+import 'views/routine_list_view.dart';
+import 'views/statistics_view.dart';
 
 void main() {
   runApp(const ProviderScope(child: FocusFlowApp()));
 }
 
-class FocusFlowApp extends StatefulWidget {
+class FocusFlowApp extends StatelessWidget {
   const FocusFlowApp({super.key});
 
   @override
-  State<FocusFlowApp> createState() => _FocusFlowAppState();
-}
-
-class _FocusFlowAppState extends State<FocusFlowApp> {
-  int _tab = 0;
-
-  @override
   Widget build(BuildContext context) {
-    const pages = [
-      HomeScreen(),
-      ListScreen(),
-      KanbanScreen(),
-      StatsScreen(),
-    ];
+    const seed = Color(0xFF6366F1); // 메인 색
+
     return MaterialApp(
       title: 'FocusFlow',
-      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorSchemeSeed: Colors.indigo,
         useMaterial3: true,
-      ),
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('FocusFlow Routine Manager'),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: seed,
+          brightness: Brightness.light,
         ),
-        body: pages[_tab],
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _tab,
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.home_outlined), label: '홈'),
-            NavigationDestination(icon: Icon(Icons.view_list_outlined), label: '리스트'),
-            NavigationDestination(icon: Icon(Icons.view_kanban_outlined), label: '칸반'),
-            NavigationDestination(icon: Icon(Icons.query_stats_outlined), label: '통계'),
-          ],
-          onDestinationSelected: (i) => setState(() => _tab = i),
+        scaffoldBackgroundColor: const Color(0xFFF5F6FB),
+        cardTheme: const CardThemeData(
+          color: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(24)),
+          ),
         ),
-        floatingActionButton: _tab == 0 || _tab == 1
-            ? const _AddRoutineFab()
-            : null,
       ),
+      home: const MainScaffold(),
     );
   }
 }
 
-class _AddRoutineFab extends ConsumerWidget {
-  const _AddRoutineFab();
+class MainScaffold extends StatefulWidget {
+  const MainScaffold({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return FloatingActionButton.extended(
-      onPressed: () async {
-        final controller = TextEditingController();
-        int focus = 3;
-        final ok = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('루틴 추가'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: controller,
-                  decoration: const InputDecoration(labelText: '제목'),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Text('집중도'),
-                    Expanded(
-                      child: Slider(
-                        min: 1,
-                        max: 5,
-                        divisions: 4,
-                        value: focus.toDouble(),
-                        label: focus.toString(),
-                        onChanged: (v) {
-                          focus = v.toInt();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+  State<MainScaffold> createState() => _MainScaffoldState();
+}
+
+class _MainScaffoldState extends State<MainScaffold> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    const pages = [
+      HomeView(),
+      RoutineListView(),
+      StatisticsView(),
+    ];
+
+    return Scaffold(
+      body: SafeArea(
+        child: pages[_currentIndex],
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 8,
+              offset: Offset(0, -2),
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
-              FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('저장')),
-            ],
-          ),
-        );
-        if (ok == true && controller.text.trim().isNotEmpty) {
-          ref.read(routineListProvider.notifier).addRoutine(
-            title: controller.text.trim(),
-            focusLevel: focus,
-          );
-        }
-      },
-      icon: const Icon(Icons.add),
-      label: const Text('루틴 추가'),
+          ],
+        ),
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _currentIndex,
+          onTap: (index) => setState(() => _currentIndex = index),
+          selectedItemColor: const Color(0xFF6366F1),
+          unselectedItemColor: Colors.grey,
+          showUnselectedLabels: true,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              label: '홈',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.view_list_outlined),
+              label: '루틴',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_outlined),
+              label: '통계',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
