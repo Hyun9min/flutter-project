@@ -28,7 +28,7 @@ class FocusFlowApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFF6366F1); // \uBA54\uC778 \uCEEC\uB7EC
+    const seed = Color(0xFF6366F1); // 메인 컬러
 
     return MaterialApp(
       title: 'FocusFlow',
@@ -105,15 +105,15 @@ class _MainScaffoldState extends State<MainScaffold> {
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.home_outlined),
-                label: '\uD648',
+                label: '홈',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.view_list_outlined),
-                label: '\uB8E8\uD2F4',
+                label: '루틴',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.bar_chart_outlined),
-                label: '\uD1B5\uACC4',
+                label: '통계',
               ),
             ],
           ),

@@ -45,7 +45,7 @@ class _RoutineFormSheetState
     final title = _titleController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('\uC81C\uBAA9\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694.')),
+        const SnackBar(content: Text('제목을 입력해 주세요.')),
       );
       return;
     }
@@ -110,7 +110,7 @@ class _RoutineFormSheetState
               ),
             ),
             Text(
-              _isEditing ? '\uB8E8\uD2F4 \uC218\uC815' : '\uC0C8 \uB8E8\uD2F4 \uCD94\uAC00',
+              _isEditing ? '루틴 수정' : '새 루틴 추가',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -120,7 +120,7 @@ class _RoutineFormSheetState
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(
-                labelText: '\uC81C\uBAA9',
+                labelText: '제목',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -129,13 +129,13 @@ class _RoutineFormSheetState
               controller: _descriptionController,
               maxLines: 2,
               decoration: const InputDecoration(
-                labelText: '\uC124\uBA85 (\uC120\uD0DD)',
+                labelText: '설명 (선택)',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
             const Text(
-              '\uC9E7\uC740 \uC911\uC810 \uB808\uBCA8',
+              '집중도 레벨',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
             ),
             Row(
@@ -155,7 +155,7 @@ class _RoutineFormSheetState
             ),
             const SizedBox(height: 8),
             const Text(
-              '\uC608\uC0C1 \uC2DC\uAC04(\uBD84)',
+              '예상 시간(분)',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 4),
@@ -167,7 +167,7 @@ class _RoutineFormSheetState
                     min: 5,
                     max: 120,
                     divisions: 23,
-                    label: '$_estimatedMinutes\uBD84',
+                    label: '$_estimatedMinutes분',
                     onChanged: (v) =>
                         setState(() => _estimatedMinutes = v.round()),
                   ),
@@ -175,7 +175,7 @@ class _RoutineFormSheetState
                 SizedBox(
                   width: 52,
                   child: Text(
-                    '$_estimatedMinutes\uBD84',
+                    '$_estimatedMinutes분',
                     textAlign: TextAlign.right,
                   ),
                 ),
@@ -195,7 +195,7 @@ class _RoutineFormSheetState
                   ),
                 ),
                 child: Text(
-                  _isEditing ? '\uC218\uC815\uD558\uAE30' : '\uCD94\uAC00\uD558\uAE30',
+                  _isEditing ? '수정하기' : '추가하기',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),

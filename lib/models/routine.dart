@@ -44,6 +44,8 @@ class Routine {
   final DateTime? endTime;
   final DateTime? completedAt;
 
+  static const _sentinel = Object();
+
   const Routine({
     required this.id,
     required this.title,
@@ -70,10 +72,10 @@ class Routine {
     int? accumulatedSeconds,
     RoutineStatus? status,
     DateTime? createdAt,
-    DateTime? startTime,
-    DateTime? runningSince,
-    DateTime? endTime,
-    DateTime? completedAt,
+    Object? startTime = _sentinel,
+    Object? runningSince = _sentinel,
+    Object? endTime = _sentinel,
+    Object? completedAt = _sentinel,
   }) {
     return Routine(
       id: id ?? this.id,
@@ -85,10 +87,18 @@ class Routine {
       accumulatedSeconds: accumulatedSeconds ?? this.accumulatedSeconds,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
-      startTime: startTime ?? this.startTime,
-      runningSince: runningSince ?? this.runningSince,
-      endTime: endTime ?? this.endTime,
-      completedAt: completedAt ?? this.completedAt,
+      startTime: identical(startTime, _sentinel)
+          ? this.startTime
+          : startTime as DateTime?,
+      runningSince: identical(runningSince, _sentinel)
+          ? this.runningSince
+          : runningSince as DateTime?,
+      endTime: identical(endTime, _sentinel)
+          ? this.endTime
+          : endTime as DateTime?,
+      completedAt: identical(completedAt, _sentinel)
+          ? this.completedAt
+          : completedAt as DateTime?,
     );
   }
 

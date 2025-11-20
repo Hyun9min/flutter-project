@@ -41,11 +41,11 @@ class RoutineCard extends ConsumerWidget {
   String get _statusBadgeText {
     switch (style) {
       case RoutineCardStyle.running:
-        return _isPaused ? '\uC77C\uC2DC\uC815\uC9C0' : '\uC9C4\uD589 \uC911';
+        return _isPaused ? '일시정지' : '진행 중';
       case RoutineCardStyle.completed:
-        return '\uC644\uB8CC';
+        return '완료';
       case RoutineCardStyle.normal:
-        return '\uB300\uAE30';
+        return '대기';
     }
   }
 
@@ -63,11 +63,11 @@ class RoutineCard extends ConsumerWidget {
   String get _actionText {
     switch (style) {
       case RoutineCardStyle.running:
-        return '\uC644\uB8CC';
+        return '완료';
       case RoutineCardStyle.completed:
-        return '\uC644\uB8CC\uB428';
+        return '완료됨';
       case RoutineCardStyle.normal:
-        return '\uC2DC\uC791';
+        return '시작';
     }
   }
 
@@ -86,9 +86,9 @@ class RoutineCard extends ConsumerWidget {
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
     if (minutes == 0) {
-      return '$secs\uCD08';
+      return '$secs초';
     }
-    return '$minutes\uBD84 ${secs.toString().padLeft(2, '0')}\uCD08';
+    return '$minutes분 ${secs.toString().padLeft(2, '0')}초';
   }
 
   String get _durationText {
@@ -96,9 +96,9 @@ class RoutineCard extends ConsumerWidget {
         routine.actualSeconds != null) {
       final actual = routine.actualSeconds!;
       final display = _formatSeconds(actual);
-      return '\uC2E4\uC81C $actual\uCD08 ($display) \u00B7 \uBAA9\uD45C ${routine.estimatedTime}\uBD84';
+      return '실제 $actual초 ($display) · 목표 ${routine.estimatedTime}분';
     }
-    return '\uBAA9\uD45C ${routine.estimatedTime}\uBD84';
+    return '목표 ${routine.estimatedTime}분';
   }
 
   double get _progressValue {
@@ -132,33 +132,48 @@ class RoutineCard extends ConsumerWidget {
         if (!started) {
           _showSnack(
             context,
-            '\uC774\uBBF8 \uC9C4\uD589 \uC911\uC778 \uB8E8\uD2F4\uC774 \uC788\uC5B4\uC694.',
+            '이미 진행 중인 루틴이 있어요.',
           );
         }
         break;
       case RoutineCardStyle.running:
         notifier.completeRoutine(routine);
-        _showSnack(context, '\uB8E8\uD2F4\uC744 \uC644\uB8CC\uD588\uC5B4\uC694.');
+        _showSnack(context, '루틴을 완료했어요.');
         break;
       case RoutineCardStyle.completed:
         break;
     }
   }
 
+  
   void _onPauseResume(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(routinesProvider.notifier);
-    final success = _isPaused
+
+    // 현재 카드가 일시정지 상태인지 저장
+    final bool wasPaused = _isPaused;
+
+    // 일시정지였다면 재개, 아니면 일시정지
+    final success = wasPaused
         ? notifier.resumeRoutine(routine)
         : notifier.pauseRoutine(routine);
+
     if (!success) {
       _showSnack(
         context,
-        '\uB2E4\uB978 \uB8E8\uD2F4\uC774 \uC9C4\uD589 \uC911\uC774\uB77C \uC870\uC791\uD560 \uC218 \uC5C6\uC5B4\uC694.',
+        '다른 루틴이 진행 중이라 조작할 수 없어요.',
       );
+      return;
+    }
+
+    // 성공적으로 상태가 변경된 경우 안내 메시지 표시
+    if (wasPaused) {
+      _showSnack(context, '할 일을 시작합니다.');
+    } else {
+      _showSnack(context, '할 일을 중단합니다.');
     }
   }
 
-  void _openForm(BuildContext context) {
+void _openForm(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -177,18 +192,18 @@ class RoutineCard extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('\uB8E8\uD2F4 \uC0AD\uC81C'),
+          title: const Text('루틴 삭제'),
           content: Text(
-            '\u2018${routine.title}\u2019 \uB8E8\uD2F4\uC744 \uC0AD\uC81C\uD560\uAE4C\uC694?',
+            '‘${routine.title}’ 루틴을 삭제할까요?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('\uCDE8\uC18C'),
+              child: const Text('취소'),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('\uC0AD\uC81C'),
+              child: const Text('삭제'),
             ),
           ],
         );
@@ -199,7 +214,7 @@ class RoutineCard extends ConsumerWidget {
 
     if (result == true) {
       ref.read(routinesProvider.notifier).deleteRoutine(routine.id);
-      _showSnack(context, '\uB8E8\uD2F4\uC744 \uC0AD\uC81C\uD588\uC5B4\uC694.');
+      _showSnack(context, '루틴을 삭제했어요.');
     }
   }
 
@@ -289,11 +304,11 @@ class RoutineCard extends ConsumerWidget {
                 itemBuilder: (_) => const [
                   PopupMenuItem(
                     value: _CardMenu.edit,
-                    child: Text('\uD3B8\uC9D1'),
+                    child: Text('편집'),
                   ),
                   PopupMenuItem(
                     value: _CardMenu.delete,
-                    child: Text('\uC0AD\uC81C'),
+                    child: Text('삭제'),
                   ),
                 ],
                 icon: const Icon(Icons.more_horiz),
@@ -318,17 +333,18 @@ class RoutineCard extends ConsumerWidget {
               runningSince: routine.runningSince,
               estimatedSeconds: routine.estimatedTime * 60,
             ),
-          ],
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: _progressValue,
-              minHeight: 6,
-              backgroundColor: const Color(0xFFE5E7EB),
-              valueColor: AlwaysStoppedAnimation(_accentColor),
+          ] else ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: _progressValue,
+                minHeight: 6,
+                backgroundColor: const Color(0xFFE5E7EB),
+                valueColor: AlwaysStoppedAnimation(_accentColor),
+              ),
             ),
-          ),
+          ],
           if (routine.status == RoutineStatus.done &&
               routine.actualSeconds != null) ...[
             const SizedBox(height: 8),
@@ -341,7 +357,7 @@ class RoutineCard extends ConsumerWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '\uC2E4\uC81C ${_formatSeconds(routine.actualSeconds!)}',
+                  '실제 ${_formatSeconds(routine.actualSeconds!)}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Colors.grey,
@@ -377,7 +393,7 @@ class RoutineCard extends ConsumerWidget {
                 )
               else if (style == RoutineCardStyle.running) ...[
                 _SecondaryActionButton(
-                  label: _isPaused ? '\uC7AC\uAC1C' : '\uC77C\uC2DC\uC815\uC9C0',
+                  label: _isPaused ? '시작' : '일시정지',
                   icon: _isPaused ? Icons.play_arrow_rounded : Icons.pause,
                   onTap: () => _onPauseResume(context, ref),
                 ),
@@ -495,7 +511,7 @@ class _CompletedChip extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           const Text(
-            '\uC644\uB8CC',
+            '완료',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,

@@ -45,7 +45,7 @@ class HomeView extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         if (inProgress.isNotEmpty || todo.isNotEmpty) ...[
-          const _SectionHeader(title: '\uC9C4\uD589 \uC911 \uB8E8\uD2F4'),
+          const _SectionHeader(title: '진행 중 루틴'),
           const SizedBox(height: 12),
           ...inProgress.map(
             (routine) => RoutineCard(
@@ -62,7 +62,7 @@ class HomeView extends ConsumerWidget {
           const SizedBox(height: 24),
         ],
         if (done.isNotEmpty) ...[
-          const _SectionHeader(title: '\uC644\uB8CC\uB41C \uB8E8\uD2F4'),
+          const _SectionHeader(title: '완료된 루틴'),
           const SizedBox(height: 12),
           ...done.map(
             (routine) => RoutineCard(
@@ -83,16 +83,16 @@ class HomeView extends ConsumerWidget {
   String _dateText() {
     final now = DateTime.now();
     const weekdayKo = [
-      '\uC6D4',
-      '\uD654',
-      '\uC218',
-      '\uBAA9',
-      '\uAE08',
-      '\uD1A0',
-      '\uC77C'
+      '월',
+      '화',
+      '수',
+      '목',
+      '금',
+      '토',
+      '일'
     ];
     final weekday = weekdayKo[now.weekday - 1];
-    return '${now.month}\uC6D4 ${now.day}\uC77C $weekday\uC694\uC77C';
+    return '${now.month}월 ${now.day}일 $weekday요일';
   }
 }
 
@@ -112,7 +112,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                '\uC624\uB298',
+                '오늘',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w600,
@@ -186,7 +186,7 @@ class _TodayProgressCard extends StatelessWidget {
           Row(
             children: [
               const Text(
-                '\uC624\uB298\uC758 \uC9C4\uD589',
+                '오늘의 진행',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -194,7 +194,7 @@ class _TodayProgressCard extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '\uC790\uC138\uD788 \uBCF4\uAE30',
+                '자세히 보기',
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 12,
@@ -206,7 +206,7 @@ class _TodayProgressCard extends StatelessWidget {
           Row(
             children: [
               const Text(
-                '\uC644\uB8CC\uC728',
+                '완료율',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const Spacer(),
@@ -234,17 +234,17 @@ class _TodayProgressCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _StatusColumn(
-                label: '\uB300\uAE30 \uC911',
+                label: '대기 중',
                 count: waitingCount,
                 color: const Color(0xFF94A3B8),
               ),
               _StatusColumn(
-                label: '\uC9C4\uD589 \uC911',
+                label: '진행 중',
                 count: inProgressCount,
                 color: const Color(0xFF6366F1),
               ),
               _StatusColumn(
-                label: '\uC644\uB8CC',
+                label: '완료',
                 count: doneCount,
                 color: const Color(0xFF22C55E),
               ),
@@ -340,7 +340,7 @@ class _EmptyState extends StatelessWidget {
           ),
           SizedBox(height: 12),
           Text(
-            '\uC624\uB298\uC758 \uB8E8\uD2F4\uC744 \uCD94\uAC00\uD574 \uBCF4\uC138\uC694',
+            '오늘의 루틴을 추가해 보세요',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 15,
@@ -348,7 +348,7 @@ class _EmptyState extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            '\uB8E8\uD2F4\uC744 \uB4F1\uB85D\uD558\uBA74 \uC790\uB3D9\uC73C\uB85C \uC9C4\uD589 \uD604\uD669\uC774 \uC815\uB9AC\uB429\uB2C8\uB2E4.',
+            '루틴을 등록하면 자동으로 진행 현황이 정리됩니다.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,

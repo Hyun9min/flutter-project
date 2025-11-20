@@ -21,7 +21,7 @@ class RoutineListView extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       children: [
         _Section(
-          title: '\uB300\uAE30',
+          title: '대기',
           count: todo.length,
           children: todo
               .map(
@@ -34,7 +34,7 @@ class RoutineListView extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _Section(
-          title: '\uC9C4\uD589 \uC911',
+          title: '진행 중',
           count: inProgress.length,
           children: inProgress
               .map(
@@ -47,7 +47,7 @@ class RoutineListView extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _Section(
-          title: '\uC644\uB8CC',
+          title: '완료',
           count: done.length,
           children: done
               .map(
@@ -90,7 +90,7 @@ class _Section extends StatelessWidget {
               ),
             ),
             Text(
-              '$count\uAC1C',
+              '$count개',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[600],

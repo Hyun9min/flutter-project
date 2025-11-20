@@ -109,7 +109,7 @@ class _RoutineTimerState extends State<RoutineTimer> {
               ],
             ),
             Text(
-              '\uBAA9\uD45C ${estimated ~/ 60}\uBD84',
+              '목표 ${estimated ~/ 60}분',
               style: const TextStyle(
                 fontSize: 12,
                 color: Colors.grey,
@@ -130,7 +130,7 @@ class _RoutineTimerState extends State<RoutineTimer> {
         if (isPaused) ...[
           const SizedBox(height: 4),
           const Text(
-            '\uC77C\uC2DC\uC815\uC9C0 \uC911',
+            '일시정지 중',
             style: TextStyle(
               fontSize: 11,
               color: Colors.grey,
@@ -139,7 +139,7 @@ class _RoutineTimerState extends State<RoutineTimer> {
         ] else if (isOvertime) ...[
           const SizedBox(height: 4),
           const Text(
-            '\u26A0\uFE0F \uC608\uC0C1 \uC2DC\uAC04\uC744 \uCD08\uACFC\uD588\uC5B4\uC694',
+            '⚠️ 예상 시간을 초과했어요',
             style: TextStyle(
               fontSize: 11,
               color: Colors.red,

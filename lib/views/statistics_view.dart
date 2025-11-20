@@ -28,10 +28,10 @@ class StatisticsView extends ConsumerWidget {
     );
     final duration = Duration(seconds: totalSeconds);
     final timeLabel = duration.inHours > 0
-        ? '${duration.inHours}\uC2DC\uAC04 ${duration.inMinutes % 60}\uBD84'
+        ? '${duration.inHours}시간 ${duration.inMinutes % 60}분'
         : duration.inMinutes > 0
-            ? '${duration.inMinutes}\uBD84 ${duration.inSeconds % 60}\uCD08'
-            : '${duration.inSeconds}\uCD08';
+            ? '${duration.inMinutes}분 ${duration.inSeconds % 60}초'
+            : '${duration.inSeconds}초';
 
     final onTimeCount = completed
         .where((r) =>
@@ -64,36 +64,36 @@ class StatisticsView extends ConsumerWidget {
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 1.4,
+                childAspectRatio: 1.2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
               children: [
                 _StatCard(
                   icon: Icons.flag_rounded,
-                  label: '\uC644\uB8CC\uC728',
+                  label: '완료율',
                   value: '$completionRate%',
                   iconBg: const Color(0xFFE8FBF1),
                   iconColor: const Color(0xFF2ECC71),
                 ),
                 _StatCard(
                   icon: Icons.bolt_rounded,
-                  label: '\uD3C9\uADE0 \uC9D9\uC810\uB3C4',
+                  label: '평균 집중도',
                   value: avgFocus,
                   iconBg: const Color(0xFFE3F2FF),
                   iconColor: const Color(0xFF007AFF),
                 ),
                 _StatCard(
                   icon: Icons.access_time_filled_rounded,
-                  label: '\uCD1D \uC9D9\uC810 \uC2DC\uAC04',
+                  label: '총 집중 시간',
                   value: timeLabel,
                   iconBg: const Color(0xFFF3E8FF),
                   iconColor: const Color(0xFF8E5CFF),
                 ),
                 _StatCard(
                   icon: Icons.emoji_events_rounded,
-                  label: '\uC81C\uC2DC\uAC04 \uC644\uB8CC',
-                  value: '$onTimeCount\uD68C',
+                  label: '완료 횟수',
+                  value: '$onTimeCount회',
                   iconBg: const Color(0xFFFFF3E0),
                   iconColor: const Color(0xFFFF9F0A),
                 ),
@@ -124,7 +124,7 @@ class _Header extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '\uD1B5\uACC4',
+              '통계',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.w600,
@@ -229,7 +229,7 @@ class _ChartCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '\uC0C1\uD0DC \uBD84\uD3EC',
+            '상태 분포',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
@@ -250,9 +250,9 @@ class _ChartCard extends StatelessWidget {
           const Wrap(
             spacing: 12,
             children: [
-              _LegendDot(color: Color(0xFFE2E8F0), label: '\uB300\uAE30'),
-              _LegendDot(color: Color(0xFF6366F1), label: '\uC9C4\uD589 \uC911'),
-              _LegendDot(color: Color(0xFF34C759), label: '\uC644\uB8CC'),
+              _LegendDot(color: Color(0xFFE2E8F0), label: '대기'),
+              _LegendDot(color: Color(0xFF6366F1), label: '진행 중'),
+              _LegendDot(color: Color(0xFF34C759), label: '완료'),
             ],
           )
         ],
@@ -309,7 +309,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
           ],
         ),
         child: const Text(
-          '\uC644\uB8CC\uB41C \uB8E8\uD2F4\uC774 \uC544\uC9C1 \uC5C6\uC5B4\uC694.',
+          '완료된 루틴이 아직 없어요.',
           style: TextStyle(color: Colors.grey),
         ),
       );
@@ -340,7 +340,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
               Icon(Icons.trending_up, size: 18, color: Colors.grey),
               SizedBox(width: 6),
               Text(
-                '\uCD5C\uACE0 \uC9D9\uC810 \uB8E8\uD2F4',
+                '최고 집중 루틴',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
@@ -355,8 +355,8 @@ class _TopFocusRoutinesSection extends StatelessWidget {
             final seconds =
                 routine.actualSeconds ?? routine.estimatedTime * 60;
             final label = seconds >= 60
-                ? '${seconds ~/ 60}\uBD84 ${seconds % 60}\uCD08'
-                : '$seconds\uCD08';
+                ? '${seconds ~/ 60}분 ${seconds % 60}초'
+                : '$seconds초';
 
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -417,6 +417,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
   }
 }
 
+
 List<PieChartSectionData> _buildChartSections({
   required int todo,
   required int inProgress,
@@ -428,29 +429,29 @@ List<PieChartSectionData> _buildChartSections({
     PieChartSectionData(
       color: const Color(0xFFE2E8F0),
       value: todo.toDouble(),
-      title: '${((todo / total) * 100).round()}%',
+      title: '',
       titleStyle: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.bold,
         color: Color(0xFF475569),
       ),
-      radius: 60,
+      radius: 65,
     ),
     PieChartSectionData(
       color: const Color(0xFF6366F1),
       value: inProgress.toDouble(),
-      title: '${((inProgress / total) * 100).round()}%',
+      title: '',
       titleStyle: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.bold,
         color: Colors.white,
       ),
-      radius: 70,
+      radius: 65,
     ),
     PieChartSectionData(
       color: const Color(0xFF34C759),
       value: done.toDouble(),
-      title: '${((done / total) * 100).round()}%',
+      title: '',
       titleStyle: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.bold,
@@ -461,7 +462,8 @@ List<PieChartSectionData> _buildChartSections({
   ];
 }
 
+
 String _todayLabel() {
   final now = DateTime.now();
-  return '${now.year}\uB144 ${now.month}\uC6D4 ${now.day}\uC77C';
+  return '${now.year}년 ${now.month}월 ${now.day}일';
 }
