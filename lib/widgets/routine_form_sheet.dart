@@ -135,7 +135,7 @@ class _RoutineFormSheetState
             ),
             const SizedBox(height: 16),
             const Text(
-              '\uC9E7\uC740 \uC911\uC810 \uB808\uBCA8',
+              '집중도 레벨',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
             ),
             Row(

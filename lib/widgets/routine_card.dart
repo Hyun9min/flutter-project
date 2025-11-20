@@ -145,20 +145,35 @@ class RoutineCard extends ConsumerWidget {
     }
   }
 
+  
   void _onPauseResume(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(routinesProvider.notifier);
-    final success = _isPaused
+
+    // 현재 카드가 일시정지 상태인지 저장
+    final bool wasPaused = _isPaused;
+
+    // 일시정지였다면 재개, 아니면 일시정지
+    final success = wasPaused
         ? notifier.resumeRoutine(routine)
         : notifier.pauseRoutine(routine);
+
     if (!success) {
       _showSnack(
         context,
-        '\uB2E4\uB978 \uB8E8\uD2F4\uC774 \uC9C4\uD589 \uC911\uC774\uB77C \uC870\uC791\uD560 \uC218 \uC5C6\uC5B4\uC694.',
+        '다른 루틴이 진행 중이라 조작할 수 없어요.',
       );
+      return;
+    }
+
+    // 성공적으로 상태가 변경된 경우 안내 메시지 표시
+    if (wasPaused) {
+      _showSnack(context, '할 일을 시작합니다.');
+    } else {
+      _showSnack(context, '할 일을 중단합니다.');
     }
   }
 
-  void _openForm(BuildContext context) {
+void _openForm(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -318,17 +333,18 @@ class RoutineCard extends ConsumerWidget {
               runningSince: routine.runningSince,
               estimatedSeconds: routine.estimatedTime * 60,
             ),
-          ],
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: _progressValue,
-              minHeight: 6,
-              backgroundColor: const Color(0xFFE5E7EB),
-              valueColor: AlwaysStoppedAnimation(_accentColor),
+          ] else ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: _progressValue,
+                minHeight: 6,
+                backgroundColor: const Color(0xFFE5E7EB),
+                valueColor: AlwaysStoppedAnimation(_accentColor),
+              ),
             ),
-          ),
+          ],
           if (routine.status == RoutineStatus.done &&
               routine.actualSeconds != null) ...[
             const SizedBox(height: 8),
@@ -377,7 +393,7 @@ class RoutineCard extends ConsumerWidget {
                 )
               else if (style == RoutineCardStyle.running) ...[
                 _SecondaryActionButton(
-                  label: _isPaused ? '\uC7AC\uAC1C' : '\uC77C\uC2DC\uC815\uC9C0',
+                  label: _isPaused ? '시작' : '일시정지',
                   icon: _isPaused ? Icons.play_arrow_rounded : Icons.pause,
                   onTap: () => _onPauseResume(context, ref),
                 ),

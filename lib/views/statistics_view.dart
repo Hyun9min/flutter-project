@@ -64,7 +64,7 @@ class StatisticsView extends ConsumerWidget {
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 1.4,
+                childAspectRatio: 1.2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
@@ -78,21 +78,21 @@ class StatisticsView extends ConsumerWidget {
                 ),
                 _StatCard(
                   icon: Icons.bolt_rounded,
-                  label: '\uD3C9\uADE0 \uC9D9\uC810\uB3C4',
+                  label: '평균 집중도',
                   value: avgFocus,
                   iconBg: const Color(0xFFE3F2FF),
                   iconColor: const Color(0xFF007AFF),
                 ),
                 _StatCard(
                   icon: Icons.access_time_filled_rounded,
-                  label: '\uCD1D \uC9D9\uC810 \uC2DC\uAC04',
+                  label: '총 집중 시간',
                   value: timeLabel,
                   iconBg: const Color(0xFFF3E8FF),
                   iconColor: const Color(0xFF8E5CFF),
                 ),
                 _StatCard(
                   icon: Icons.emoji_events_rounded,
-                  label: '\uC81C\uC2DC\uAC04 \uC644\uB8CC',
+                  label: '완료 횟수',
                   value: '$onTimeCount\uD68C',
                   iconBg: const Color(0xFFFFF3E0),
                   iconColor: const Color(0xFFFF9F0A),
@@ -340,7 +340,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
               Icon(Icons.trending_up, size: 18, color: Colors.grey),
               SizedBox(width: 6),
               Text(
-                '\uCD5C\uACE0 \uC9D9\uC810 \uB8E8\uD2F4',
+                '최고 집중 루틴',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
@@ -417,6 +417,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
   }
 }
 
+
 List<PieChartSectionData> _buildChartSections({
   required int todo,
   required int inProgress,
@@ -428,29 +429,29 @@ List<PieChartSectionData> _buildChartSections({
     PieChartSectionData(
       color: const Color(0xFFE2E8F0),
       value: todo.toDouble(),
-      title: '${((todo / total) * 100).round()}%',
+      title: '',
       titleStyle: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.bold,
         color: Color(0xFF475569),
       ),
-      radius: 60,
+      radius: 65,
     ),
     PieChartSectionData(
       color: const Color(0xFF6366F1),
       value: inProgress.toDouble(),
-      title: '${((inProgress / total) * 100).round()}%',
+      title: '',
       titleStyle: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.bold,
         color: Colors.white,
       ),
-      radius: 70,
+      radius: 65,
     ),
     PieChartSectionData(
       color: const Color(0xFF34C759),
       value: done.toDouble(),
-      title: '${((done / total) * 100).round()}%',
+      title: '',
       titleStyle: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.bold,
@@ -460,6 +461,7 @@ List<PieChartSectionData> _buildChartSections({
     ),
   ];
 }
+
 
 String _todayLabel() {
   final now = DateTime.now();
