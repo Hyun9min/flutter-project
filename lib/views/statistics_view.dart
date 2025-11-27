@@ -403,7 +403,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
             final est = routine.estimatedTime * 60;
             final act = routine.actualSeconds ?? est;
             final ratio = est > 0 ? (est - act) / est : 0.0;
-            final savedPercent = (ratio * 100).round(); // 퍼센트 단위
+            final savedPercent = (ratio * 100).toStringAsFixed(2); // 퍼센트 단위
 
             final seconds = act;
             final timeLabel = seconds >= 60
