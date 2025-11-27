@@ -9,17 +9,15 @@ class RoutineFormSheet extends ConsumerStatefulWidget {
   final Routine? initialRoutine;
 
   @override
-  ConsumerState<RoutineFormSheet> createState() =>
-      _RoutineFormSheetState();
+  ConsumerState<RoutineFormSheet> createState() => _RoutineFormSheetState();
 }
 
-class _RoutineFormSheetState
-    extends ConsumerState<RoutineFormSheet> {
+class _RoutineFormSheetState extends ConsumerState<RoutineFormSheet> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   double _focusLevel = 3;
   int _estimatedMinutes = 25;
-
+  String? _errorMessage;
   bool get _isEditing => widget.initialRoutine != null;
 
   @override
@@ -51,12 +49,12 @@ class _RoutineFormSheetState
     }
 
     final notifier = ref.read(routinesProvider.notifier);
-    final description =
-        _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim();
+    final description = _descriptionController.text.trim().isEmpty
+        ? null
+        : _descriptionController.text.trim();
 
     if (_isEditing) {
+      // 수정 모드
       final updated = widget.initialRoutine!.copyWith(
         title: title,
         description: description,
@@ -65,6 +63,7 @@ class _RoutineFormSheetState
       );
       notifier.updateRoutine(updated);
     } else {
+      // 추가 모드 (중복 체크)
       final now = DateTime.now();
       final routine = Routine(
         id: now.millisecondsSinceEpoch.toString(),
@@ -76,9 +75,21 @@ class _RoutineFormSheetState
         createdAt: now,
         accumulatedSeconds: 0,
       );
-      notifier.addRoutine(routine);
+      final added = notifier.addRoutine(routine);
+
+      // 🔹 이미 있는 제목이면 추가 실패 + 안내
+      if (!added) {
+        setState(() {
+          _errorMessage = '이미 같은 이름의 루틴이 있어요. 다른 이름으로 만들어 주세요.';
+        });
+        return; // 닫지 않고 폼 그대로 유지
+      }
     }
 
+    // 성공했으면 에러 메시지 초기화하고 닫기
+    setState(() {
+      _errorMessage = null;
+    });
     Navigator.of(context).pop();
   }
 
@@ -109,6 +120,35 @@ class _RoutineFormSheetState
                 ),
               ),
             ),
+            // // 🔹 에러 메시지 박스 (있을 때만)
+            // if (_errorMessage != null) ...[
+            //   Container(
+            //     width: double.infinity,
+            //     margin: const EdgeInsets.only(bottom: 12),
+            //     padding: const EdgeInsets.all(10),
+            //     decoration: BoxDecoration(
+            //       color: Colors.red.withOpacity(0.08),
+            //       borderRadius: BorderRadius.circular(12),
+            //     ),
+            //     child: Row(
+            //       crossAxisAlignment: CrossAxisAlignment.center,
+            //       children: [
+            //         const Icon(Icons.error_outline,
+            //             color: Colors.red, size: 18),
+            //         const SizedBox(width: 8),
+            //         Expanded(
+            //           child: Text(
+            //             _errorMessage!,
+            //             style: const TextStyle(
+            //               color: Colors.red,
+            //               fontSize: 13,
+            //             ),
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // ],
             Text(
               _isEditing ? '루틴 수정' : '새 루틴 추가',
               style: const TextStyle(
@@ -119,9 +159,10 @@ class _RoutineFormSheetState
             const SizedBox(height: 16),
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: '제목',
                 border: OutlineInputBorder(),
+                errorText: _errorMessage,
               ),
             ),
             const SizedBox(height: 12),

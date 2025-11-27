@@ -14,8 +14,7 @@ class HomeView extends ConsumerWidget {
     final todo = routines.where((r) => r.status == RoutineStatus.todo).toList();
     final inProgress =
         routines.where((r) => r.status == RoutineStatus.inProgress).toList();
-    final done =
-        routines.where((r) => r.status == RoutineStatus.done).toList();
+    final done = routines.where((r) => r.status == RoutineStatus.done).toList();
 
     final total = routines.length;
     final completionRate = total == 0 ? 0.0 : done.length / total;
@@ -82,15 +81,7 @@ class HomeView extends ConsumerWidget {
 
   String _dateText() {
     final now = DateTime.now();
-    const weekdayKo = [
-      '월',
-      '화',
-      '수',
-      '목',
-      '금',
-      '토',
-      '일'
-    ];
+    const weekdayKo = ['월', '화', '수', '목', '금', '토', '일'];
     final weekday = weekdayKo[now.weekday - 1];
     return '${now.month}월 ${now.day}일 $weekday요일';
   }
@@ -190,14 +181,6 @@ class _TodayProgressCard extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '자세히 보기',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
                 ),
               ),
             ],

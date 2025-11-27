@@ -23,8 +23,7 @@ class StatisticsView extends ConsumerWidget {
 
     final totalSeconds = completed.fold<int>(
       0,
-      (sum, r) =>
-          sum + (r.actualSeconds ?? r.estimatedTime * 60),
+      (sum, r) => sum + (r.actualSeconds ?? r.estimatedTime * 60),
     );
     final duration = Duration(seconds: totalSeconds);
     final timeLabel = duration.inHours > 0
@@ -35,8 +34,7 @@ class StatisticsView extends ConsumerWidget {
 
     final onTimeCount = completed
         .where((r) =>
-            (r.actualSeconds ?? r.estimatedTime * 60) <=
-            r.estimatedTime * 60)
+            (r.actualSeconds ?? r.estimatedTime * 60) <= r.estimatedTime * 60)
         .length;
 
     final todoCount =
@@ -315,9 +313,58 @@ class _TopFocusRoutinesSection extends StatelessWidget {
       );
     }
 
-    final sorted = [...routines]
-      ..sort((a, b) => b.focusLevel.compareTo(a.focusLevel));
-    final top5 = sorted.take(5).toList();
+    // 1) 설정 시간보다 빨리 끝낸 루틴만 필터링
+    final fasterRoutines = routines.where((r) {
+      final estimatedSeconds = r.estimatedTime * 60;
+      final actualSeconds = r.actualSeconds;
+      if (actualSeconds == null) return false;
+      if (estimatedSeconds <= 0) return false;
+      return actualSeconds < estimatedSeconds;
+    }).toList();
+
+    if (fasterRoutines.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.all(Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x11000000),
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Text(
+          '설정한 시간보다 빠르게 완료한 루틴이 아직 없어요.',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    // 2) "절약 비율(%)" 기준으로 정렬
+    fasterRoutines.sort((a, b) {
+      final estA = a.estimatedTime * 60;
+      final estB = b.estimatedTime * 60;
+      final actA = a.actualSeconds!;
+      final actB = b.actualSeconds!;
+
+      final ratioA = (estA - actA) / estA; // 0.0 ~ 1.0
+      final ratioB = (estB - actB) / estB;
+
+      final cmpRatio = ratioB.compareTo(ratioA); // 큰 비율 먼저
+      if (cmpRatio != 0) return cmpRatio;
+
+      // 비율 같으면 집중도 높은 순
+      final cmpFocus = b.focusLevel.compareTo(a.focusLevel);
+      if (cmpFocus != 0) return cmpFocus;
+
+      // 그래도 같으면 제목 순
+      return a.title.compareTo(b.title);
+    });
+
+    final top5 = fasterRoutines.take(5).toList();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -352,9 +399,14 @@ class _TopFocusRoutinesSection extends StatelessWidget {
           ...top5.asMap().entries.map((entry) {
             final index = entry.key + 1;
             final routine = entry.value;
-            final seconds =
-                routine.actualSeconds ?? routine.estimatedTime * 60;
-            final label = seconds >= 60
+
+            final est = routine.estimatedTime * 60;
+            final act = routine.actualSeconds ?? est;
+            final ratio = est > 0 ? (est - act) / est : 0.0;
+            final savedPercent = (ratio * 100).round(); // 퍼센트 단위
+
+            final seconds = act;
+            final timeLabel = seconds >= 60
                 ? '${seconds ~/ 60}분 ${seconds % 60}초'
                 : '$seconds초';
 
@@ -391,7 +443,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Lv.${routine.focusLevel}',
+                          'Lv.${routine.focusLevel} · 목표 시간(${routine.estimatedTime}분) 대비 ${savedPercent}％ 단축',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -401,7 +453,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    label,
+                    timeLabel,
                     style: const TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
@@ -416,7 +468,6 @@ class _TopFocusRoutinesSection extends StatelessWidget {
     );
   }
 }
-
 
 List<PieChartSectionData> _buildChartSections({
   required int todo,
@@ -461,7 +512,6 @@ List<PieChartSectionData> _buildChartSections({
     ),
   ];
 }
-
 
 String _todayLabel() {
   final now = DateTime.now();

@@ -93,9 +93,8 @@ class Routine {
       runningSince: identical(runningSince, _sentinel)
           ? this.runningSince
           : runningSince as DateTime?,
-      endTime: identical(endTime, _sentinel)
-          ? this.endTime
-          : endTime as DateTime?,
+      endTime:
+          identical(endTime, _sentinel) ? this.endTime : endTime as DateTime?,
       completedAt: identical(completedAt, _sentinel)
           ? this.completedAt
           : completedAt as DateTime?,
@@ -111,9 +110,7 @@ class Routine {
       focusLevel: json['focusLevel'] as int,
       estimatedTime: json['estimatedTime'] as int,
       actualSeconds: (json['actualSeconds'] as int?) ??
-          (legacyActualMinutes != null
-              ? legacyActualMinutes * 60
-              : null),
+          (legacyActualMinutes != null ? legacyActualMinutes * 60 : null),
       accumulatedSeconds: json['accumulatedSeconds'] as int? ?? 0,
       status: RoutineStatus.values.firstWhere(
         (status) => status.name == json['status'],
@@ -166,14 +163,27 @@ class RoutineListNotifier extends StateNotifier<List<Routine>> {
 
   final RoutinePersistence _persistence;
 
+  // 제목 중복 여부 체크 함수 (공백/대소문자 무시)
+  bool _isTitleDuplicated(String title) {
+    final normalized = title.trim().toLowerCase();
+    return state.any(
+      (r) => r.title.trim().toLowerCase() == normalized,
+    );
+  }
+
   Future<void> _loadInitial() async {
     final stored = await _persistence.load();
     state = stored;
   }
 
-  void addRoutine(Routine routine) {
+  bool addRoutine(Routine routine) {
+    if (_isTitleDuplicated(routine.title)) {
+      return false;
+    }
+
     state = [...state, routine];
     _persist();
+    return true;
   }
 
   void updateRoutine(Routine routine) {
@@ -191,7 +201,10 @@ class RoutineListNotifier extends StateNotifier<List<Routine>> {
 
   bool startRoutine(Routine routine) {
     final hasAnotherRunning = state.any(
-      (r) => r.id != routine.id && r.status == RoutineStatus.inProgress,
+      (r) =>
+          r.id != routine.id &&
+          r.status == RoutineStatus.inProgress &&
+          r.runningSince != null,
     );
     if (hasAnotherRunning) {
       return false;
@@ -255,8 +268,7 @@ class RoutineListNotifier extends StateNotifier<List<Routine>> {
     final runningSeconds = routine.runningSince != null
         ? now.difference(routine.runningSince!).inSeconds
         : 0;
-    final totalSeconds =
-        routine.accumulatedSeconds + runningSeconds;
+    final totalSeconds = routine.accumulatedSeconds + runningSeconds;
 
     final updated = routine.copyWith(
       status: RoutineStatus.done,
@@ -283,5 +295,3 @@ final routinesProvider =
   final persistence = ref.watch(routinePersistenceProvider);
   return RoutineListNotifier(persistence);
 });
-
-
