@@ -4,23 +4,28 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../models/routine.dart';
 
+// 통계 탭 화면
 class StatisticsView extends ConsumerWidget {
   const StatisticsView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 전체 루틴 상태 가져오기
     final routines = ref.watch(routinesProvider);
+    // 완료된 루틴만 추려서 사용
     final completed =
         routines.where((r) => r.status == RoutineStatus.done).toList();
+    // 완료율 계산 (전체 중 완료된 비율, %)
     final total = routines.length;
     final completionRate =
         total == 0 ? 0 : ((completed.length / total) * 100).round();
+    // 완료된 루틴들 기준 평균 집중도 (1~5 레벨 평균)
     final avgFocus = completed.isEmpty
         ? '0.0'
         : (completed.fold<int>(0, (sum, r) => sum + r.focusLevel) /
                 completed.length)
             .toStringAsFixed(1);
-
+    // 총 집중 시간 계산 (실제 시간 사용, 없으면 목표 시간 사용)
     final totalSeconds = completed.fold<int>(
       0,
       (sum, r) => sum + (r.actualSeconds ?? r.estimatedTime * 60),
@@ -31,18 +36,19 @@ class StatisticsView extends ConsumerWidget {
         : duration.inMinutes > 0
             ? '${duration.inMinutes}분 ${duration.inSeconds % 60}초'
             : '${duration.inSeconds}초';
-
+    // 목표 시간 안에 끝낸 루틴 개수
     final onTimeCount = completed
         .where((r) =>
             (r.actualSeconds ?? r.estimatedTime * 60) <= r.estimatedTime * 60)
         .length;
-
+    // 상태별 개수 (대기 / 진행 / 완료)
     final todoCount =
         routines.where((r) => r.status == RoutineStatus.todo).length;
     final inProgressCount =
         routines.where((r) => r.status == RoutineStatus.inProgress).length;
     final doneCount = completed.length;
 
+    // 파이 차트에 들어갈 섹션 데이터
     final chartSections = _buildChartSections(
       todo: todoCount,
       inProgress: inProgressCount,
@@ -57,6 +63,7 @@ class StatisticsView extends ConsumerWidget {
           children: [
             _Header(dateLabel: _todayLabel()),
             const SizedBox(height: 16),
+            // 상단 4개 통계 카드 (2x2 Grid)
             GridView(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -98,8 +105,10 @@ class StatisticsView extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 20),
+            // 상태 분포 파이 차트
             _ChartCard(sections: chartSections),
             const SizedBox(height: 20),
+            // 목표 시간 대비 더 빠르게 끝낸 상위 루틴 목록
             _TopFocusRoutinesSection(routines: completed),
           ],
         ),
@@ -108,6 +117,7 @@ class StatisticsView extends ConsumerWidget {
   }
 }
 
+// 통계 화면 상단 헤더
 class _Header extends StatelessWidget {
   const _Header({required this.dateLabel});
 
@@ -141,6 +151,7 @@ class _Header extends StatelessWidget {
   }
 }
 
+// 상단 통계 카드 하나 (완료율, 평균 집중도 등)
 class _StatCard extends StatelessWidget {
   const _StatCard({
     required this.icon,
@@ -203,6 +214,7 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+// 상태 분포 파이 차트 카드
 class _ChartCard extends StatelessWidget {
   const _ChartCard({required this.sections});
 
@@ -285,13 +297,15 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
+// "최고 집중 루틴" 영역
 class _TopFocusRoutinesSection extends StatelessWidget {
   const _TopFocusRoutinesSection({required this.routines});
-
+  // 완료된 루틴 리스트 (상위에서 필터링해서 내려줌)
   final List<Routine> routines;
 
   @override
   Widget build(BuildContext context) {
+    // 완료된 루틴 자체가 없을 때
     if (routines.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -313,7 +327,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
       );
     }
 
-    // 1) 설정 시간보다 빨리 끝낸 루틴만 필터링
+    // 설정 시간보다 빨리 끝낸 루틴만 필터링
     final fasterRoutines = routines.where((r) {
       final estimatedSeconds = r.estimatedTime * 60;
       final actualSeconds = r.actualSeconds;
@@ -322,6 +336,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
       return actualSeconds < estimatedSeconds;
     }).toList();
 
+    // 빠르게 끝낸 루틴이 하나도 없을 때
     if (fasterRoutines.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -343,7 +358,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
       );
     }
 
-    // 2) "절약 비율(%)" 기준으로 정렬
+    // "절약 비율(%)" 기준으로 정렬
     fasterRoutines.sort((a, b) {
       final estA = a.estimatedTime * 60;
       final estB = b.estimatedTime * 60;
@@ -363,7 +378,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
       // 그래도 같으면 제목 순
       return a.title.compareTo(b.title);
     });
-
+    // 상위 5개까지만 표시
     final top5 = fasterRoutines.take(5).toList();
 
     return Container(
@@ -432,6 +447,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
+                  // 루틴 정보 (제목, 집중도, 목표 대비 절약 비율)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,6 +458,7 @@ class _TopFocusRoutinesSection extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
+                        // 실제 소요 시간(완료 시간)
                         Text(
                           'Lv.${routine.focusLevel} · 목표 시간(${routine.estimatedTime}분) 대비 ${savedPercent}％ 단축',
                           style: const TextStyle(
@@ -469,16 +486,18 @@ class _TopFocusRoutinesSection extends StatelessWidget {
   }
 }
 
+// 파이 차트에 사용할 섹션 데이터 만들기
 List<PieChartSectionData> _buildChartSections({
   required int todo,
   required int inProgress,
   required int done,
 }) {
+  // total이 0일 때도 0으로 나누는 상황을 피하기 위해 최소값 1로 clamp
   final total = (todo + inProgress + done).clamp(1, 1 << 30);
 
   return [
     PieChartSectionData(
-      color: const Color(0xFFE2E8F0),
+      color: const Color(0xFFE2E8F0), // 대기
       value: todo.toDouble(),
       title: '',
       titleStyle: const TextStyle(
@@ -489,7 +508,7 @@ List<PieChartSectionData> _buildChartSections({
       radius: 65,
     ),
     PieChartSectionData(
-      color: const Color(0xFF6366F1),
+      color: const Color(0xFF6366F1), // 진행 중
       value: inProgress.toDouble(),
       title: '',
       titleStyle: const TextStyle(
@@ -500,7 +519,7 @@ List<PieChartSectionData> _buildChartSections({
       radius: 65,
     ),
     PieChartSectionData(
-      color: const Color(0xFF34C759),
+      color: const Color(0xFF34C759), // 완료
       value: done.toDouble(),
       title: '',
       titleStyle: const TextStyle(
@@ -513,6 +532,7 @@ List<PieChartSectionData> _buildChartSections({
   ];
 }
 
+// 상단에 표시할 "오늘 날짜" 텍스트
 String _todayLabel() {
   final now = DateTime.now();
   return '${now.year}년 ${now.month}월 ${now.day}일';

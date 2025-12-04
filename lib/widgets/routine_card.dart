@@ -5,28 +5,33 @@ import '../models/routine.dart';
 import 'routine_form_sheet.dart';
 import 'routine_timer.dart';
 
+// 카드 스타일 종류
 enum RoutineCardStyle {
   normal,
   running,
   completed,
 }
 
+// 카드에서 사용하는 팝업 메뉴 항목 (편집 / 삭제
 enum _CardMenu { edit, delete }
 
+// 개별 루틴을 카드 형태로 보여주는 위젯
 class RoutineCard extends ConsumerWidget {
   const RoutineCard({
     super.key,
     required this.routine,
     this.style = RoutineCardStyle.normal,
   });
-
+  // 표시할 루틴 데이터
   final Routine routine;
+  // 카드가 어떤 상태로 보여질지 결정하는 스타일
   final RoutineCardStyle style;
 
+  // 진행 중 상태인데 runningSince가 null이면 일시정지 상태로 봄
   bool get _isPaused =>
       routine.status == RoutineStatus.inProgress &&
       routine.runningSince == null;
-
+  // 카드에서 사용하는 포인트 색상
   Color get _accentColor {
     switch (style) {
       case RoutineCardStyle.running:
@@ -38,6 +43,7 @@ class RoutineCard extends ConsumerWidget {
     }
   }
 
+  // 상태 뱃지에 표시할 텍스트
   String get _statusBadgeText {
     switch (style) {
       case RoutineCardStyle.running:
@@ -49,6 +55,7 @@ class RoutineCard extends ConsumerWidget {
     }
   }
 
+  // 상태 뱃지의 색상
   Color get _statusBadgeColor {
     switch (style) {
       case RoutineCardStyle.running:
@@ -60,6 +67,7 @@ class RoutineCard extends ConsumerWidget {
     }
   }
 
+  // 우측 액션 버튼에 들어갈 텍스트
   String get _actionText {
     switch (style) {
       case RoutineCardStyle.running:
@@ -71,6 +79,7 @@ class RoutineCard extends ConsumerWidget {
     }
   }
 
+  // 우측 액션 버튼에 들어갈 아이콘
   IconData get _actionIcon {
     switch (style) {
       case RoutineCardStyle.running:
@@ -82,6 +91,7 @@ class RoutineCard extends ConsumerWidget {
     }
   }
 
+  // 초 단위를 "X분 XX초" 형태로 포맷팅하는 함수
   String _formatSeconds(int seconds) {
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
@@ -91,9 +101,9 @@ class RoutineCard extends ConsumerWidget {
     return '$minutes분 ${secs.toString().padLeft(2, '0')}초';
   }
 
+  // 하단 "목표 / 실제" 설명 텍스트
   String get _durationText {
-    if (routine.status == RoutineStatus.done &&
-        routine.actualSeconds != null) {
+    if (routine.status == RoutineStatus.done && routine.actualSeconds != null) {
       final actual = routine.actualSeconds!;
       final display = _formatSeconds(actual);
       return '실제 $actual초 ($display) · 목표 ${routine.estimatedTime}분';
@@ -101,6 +111,7 @@ class RoutineCard extends ConsumerWidget {
     return '목표 ${routine.estimatedTime}분';
   }
 
+  // 진행 바 값 (0.0 ~ 1.0)
   double get _progressValue {
     if (style == RoutineCardStyle.completed) {
       return 1;
@@ -119,11 +130,13 @@ class RoutineCard extends ConsumerWidget {
     return 0;
   }
 
+  // 스낵바로 안내 메시지 보여주기 공용 함수
   void _showSnack(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
+  // 하단 메인 액션 버튼 "시작 / 완료 / 완료됨" 눌렀을 때 동작
   void _onPrimaryPressed(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(routinesProvider.notifier);
     switch (style) {
@@ -145,7 +158,7 @@ class RoutineCard extends ConsumerWidget {
     }
   }
 
-  
+  // "일시정지 / 다시 시작" 버튼 동작 처리
   void _onPauseResume(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(routinesProvider.notifier);
 
@@ -173,7 +186,8 @@ class RoutineCard extends ConsumerWidget {
     }
   }
 
-void _openForm(BuildContext context) {
+  // 편집용 바텀시트 열기 (루틴 수정)
+  void _openForm(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -184,6 +198,7 @@ void _openForm(BuildContext context) {
     );
   }
 
+  // 삭제 확인 다이얼로그 띄우고, 확인 시 루틴 삭제
   Future<void> _confirmDelete(
     BuildContext context,
     WidgetRef ref,
@@ -209,7 +224,7 @@ void _openForm(BuildContext context) {
         );
       },
     );
-
+    // 다이얼로그 닫힌 후 context가 여전히 유효한지 확인
     if (!context.mounted) return;
 
     if (result == true) {
@@ -218,6 +233,7 @@ void _openForm(BuildContext context) {
     }
   }
 
+  // 카드 우측 상단 메뉴(편집 / 삭제) 선택 시 동작
   void _onMenuSelected(BuildContext context, WidgetRef ref, _CardMenu menu) {
     switch (menu) {
       case _CardMenu.edit:
@@ -248,9 +264,11 @@ void _openForm(BuildContext context) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 상단: 제목 / 집중 레벨 / 상태 뱃지 / 더보기 메뉴
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 제목 + 집중 레벨
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,6 +301,7 @@ void _openForm(BuildContext context) {
                   ],
                 ),
               ),
+              // 상태 뱃지 (대기 / 진행 중 / 일시정지 / 완료)
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -299,6 +318,7 @@ void _openForm(BuildContext context) {
                   ),
                 ),
               ),
+              // 우측 상단 더보기 메뉴 (편집/삭제)
               PopupMenuButton<_CardMenu>(
                 onSelected: (menu) => _onMenuSelected(context, ref, menu),
                 itemBuilder: (_) => const [
@@ -315,6 +335,7 @@ void _openForm(BuildContext context) {
               ),
             ],
           ),
+          // 설명이 있을 때만 표시
           if (routine.description != null &&
               routine.description!.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -326,6 +347,7 @@ void _openForm(BuildContext context) {
               ),
             ),
           ],
+          // 진행 중인 루틴이면 Timer UI 표시, 아니면 진행 바 표시
           if (routine.status == RoutineStatus.inProgress) ...[
             const SizedBox(height: 14),
             RoutineTimer(
@@ -345,6 +367,7 @@ void _openForm(BuildContext context) {
               ),
             ),
           ],
+          // 완료된 루틴인 경우 실제 소요 시간 텍스트 표시
           if (routine.status == RoutineStatus.done &&
               routine.actualSeconds != null) ...[
             const SizedBox(height: 8),
@@ -367,6 +390,7 @@ void _openForm(BuildContext context) {
             ),
           ],
           const SizedBox(height: 12),
+          // 하단: "목표/실제 시간 정보" + 액션 버튼 영역
           Row(
             children: [
               Icon(
@@ -384,7 +408,9 @@ void _openForm(BuildContext context) {
                   ),
                 ),
               ),
+              // 상태에 따라 다른 버튼 세트 표시
               if (style == RoutineCardStyle.normal)
+                // 대기 상태: "시작" 버튼만
                 _PrimaryActionButton(
                   label: _actionText,
                   icon: _actionIcon,
@@ -392,6 +418,7 @@ void _openForm(BuildContext context) {
                   onTap: () => _onPrimaryPressed(context, ref),
                 )
               else if (style == RoutineCardStyle.running) ...[
+                // 진행 중 상태: "일시정지 / 시작" + "완료" 버튼
                 _SecondaryActionButton(
                   label: _isPaused ? '시작' : '일시정지',
                   icon: _isPaused ? Icons.play_arrow_rounded : Icons.pause,
@@ -405,6 +432,7 @@ void _openForm(BuildContext context) {
                   onTap: () => _onPrimaryPressed(context, ref),
                 ),
               ] else
+                // 완료 상태: "완료" Chip만 표시
                 _CompletedChip(color: _accentColor),
             ],
           ),
@@ -414,6 +442,7 @@ void _openForm(BuildContext context) {
   }
 }
 
+// 메인 액션 버튼(보라색/파란색 배경 버튼)
 class _PrimaryActionButton extends StatelessWidget {
   const _PrimaryActionButton({
     required this.label,
@@ -458,6 +487,7 @@ class _PrimaryActionButton extends StatelessWidget {
   }
 }
 
+// 서브 액션 버튼(파란색 테두리 아웃라인 버튼)
 class _SecondaryActionButton extends StatelessWidget {
   const _SecondaryActionButton({
     required this.label,
@@ -488,6 +518,7 @@ class _SecondaryActionButton extends StatelessWidget {
   }
 }
 
+// 완료된 루틴일 때 우측에 보여주는 "완료" 칩
 class _CompletedChip extends StatelessWidget {
   const _CompletedChip({required this.color});
 

@@ -31,18 +31,19 @@ extension RoutineStatusLabel on RoutineStatus {
 
 class Routine {
   final String id;
-  final String title;
-  final String? description;
-  final int focusLevel; // 1-5
-  final int estimatedTime; // minutes
-  final int? actualSeconds; // seconds
-  final int accumulatedSeconds; // seconds
-  final RoutineStatus status;
-  final DateTime createdAt;
-  final DateTime? startTime;
-  final DateTime? runningSince;
-  final DateTime? endTime;
-  final DateTime? completedAt;
+
+  final String title; // 루틴 제목
+  final String? description; // 루틴 설명(옵션)
+  final int focusLevel; // 집중도(1~5 레벨)
+  final int estimatedTime; // 사용자가 설정한 목표 시간(분 단위)
+  final int? actualSeconds; // 실제로 집중한 전체 시간(초 단위)
+  final int accumulatedSeconds; // 누적된 시간(초).
+  final RoutineStatus status; // 현재 루틴 상태 (대기/진행 중/완료)
+  final DateTime createdAt; // 루틴 생성 시각
+  final DateTime? startTime; // 처음 시작한 시각
+  final DateTime? runningSince; // 마지막으로 타이머를 시작한 시각
+  final DateTime? endTime; // 루틴을 실제로 끝낸 시각(완료 시각)
+  final DateTime? completedAt; // 통계에서 사용할 완료 시각
 
   static const _sentinel = Object();
 
@@ -171,6 +172,7 @@ class RoutineListNotifier extends StateNotifier<List<Routine>> {
     );
   }
 
+  // 앱 시작 시 저장소에서 루틴 목록을 한 번 불러온다
   Future<void> _loadInitial() async {
     final stored = await _persistence.load();
     state = stored;
@@ -224,6 +226,7 @@ class RoutineListNotifier extends StateNotifier<List<Routine>> {
     return true;
   }
 
+  // 진행 중인 루틴을 일시정지
   bool pauseRoutine(Routine routine) {
     if (routine.status != RoutineStatus.inProgress ||
         routine.runningSince == null) {
@@ -241,6 +244,7 @@ class RoutineListNotifier extends StateNotifier<List<Routine>> {
     return true;
   }
 
+  // 일시정지된 루틴을 다시 진행 중으로 변경
   bool resumeRoutine(Routine routine) {
     if (routine.status != RoutineStatus.inProgress ||
         routine.runningSince != null) {
@@ -263,6 +267,7 @@ class RoutineListNotifier extends StateNotifier<List<Routine>> {
     return true;
   }
 
+  // 루틴을 완료 상태로 변경
   void completeRoutine(Routine routine) {
     final now = DateTime.now();
     final runningSeconds = routine.runningSince != null
@@ -290,6 +295,7 @@ final routinePersistenceProvider = Provider<RoutinePersistence>((ref) {
   throw UnimplementedError('routinePersistenceProvider must be overridden');
 });
 
+// 화면 전체에서 공유하는 루틴 목록 Provider
 final routinesProvider =
     StateNotifierProvider<RoutineListNotifier, List<Routine>>((ref) {
   final persistence = ref.watch(routinePersistenceProvider);

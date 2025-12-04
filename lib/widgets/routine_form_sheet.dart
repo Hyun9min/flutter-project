@@ -39,6 +39,7 @@ class _RoutineFormSheetState extends ConsumerState<RoutineFormSheet> {
     super.dispose();
   }
 
+  // 폼을 제출할 때 호출되는 메서드
   void _submit() {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
@@ -77,7 +78,7 @@ class _RoutineFormSheetState extends ConsumerState<RoutineFormSheet> {
       );
       final added = notifier.addRoutine(routine);
 
-      // 🔹 이미 있는 제목이면 추가 실패 + 안내
+      // 이미 있는 제목이면 추가 실패 + 안내
       if (!added) {
         setState(() {
           _errorMessage = '이미 같은 이름의 루틴이 있어요. 다른 이름으로 만들어 주세요.';
@@ -120,35 +121,6 @@ class _RoutineFormSheetState extends ConsumerState<RoutineFormSheet> {
                 ),
               ),
             ),
-            // // 🔹 에러 메시지 박스 (있을 때만)
-            // if (_errorMessage != null) ...[
-            //   Container(
-            //     width: double.infinity,
-            //     margin: const EdgeInsets.only(bottom: 12),
-            //     padding: const EdgeInsets.all(10),
-            //     decoration: BoxDecoration(
-            //       color: Colors.red.withOpacity(0.08),
-            //       borderRadius: BorderRadius.circular(12),
-            //     ),
-            //     child: Row(
-            //       crossAxisAlignment: CrossAxisAlignment.center,
-            //       children: [
-            //         const Icon(Icons.error_outline,
-            //             color: Colors.red, size: 18),
-            //         const SizedBox(width: 8),
-            //         Expanded(
-            //           child: Text(
-            //             _errorMessage!,
-            //             style: const TextStyle(
-            //               color: Colors.red,
-            //               fontSize: 13,
-            //             ),
-            //           ),
-            //         ),
-            //       ],
-            //     ),
-            //   ),
-            // ],
             Text(
               _isEditing ? '루틴 수정' : '새 루틴 추가',
               style: const TextStyle(
@@ -157,6 +129,7 @@ class _RoutineFormSheetState extends ConsumerState<RoutineFormSheet> {
               ),
             ),
             const SizedBox(height: 16),
+            // 제목 입력
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
@@ -166,6 +139,7 @@ class _RoutineFormSheetState extends ConsumerState<RoutineFormSheet> {
               ),
             ),
             const SizedBox(height: 12),
+            // 설명 입력 (선택 사항)
             TextField(
               controller: _descriptionController,
               maxLines: 2,
@@ -175,6 +149,7 @@ class _RoutineFormSheetState extends ConsumerState<RoutineFormSheet> {
               ),
             ),
             const SizedBox(height: 16),
+            // 집중도 레벨 슬라이더
             const Text(
               '집중도 레벨',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
@@ -195,6 +170,7 @@ class _RoutineFormSheetState extends ConsumerState<RoutineFormSheet> {
               ],
             ),
             const SizedBox(height: 8),
+            // 예상 시간(분 단위) 슬라이더
             const Text(
               '예상 시간(분)',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
@@ -223,6 +199,7 @@ class _RoutineFormSheetState extends ConsumerState<RoutineFormSheet> {
               ],
             ),
             const SizedBox(height: 16),
+            // 제출 버튼 (추가/수정 공용)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

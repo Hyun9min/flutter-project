@@ -10,12 +10,14 @@ class HomeView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 전체 루틴 상태 가져오기
     final routines = ref.watch(routinesProvider);
+    // 상태별로 루틴 나누기
     final todo = routines.where((r) => r.status == RoutineStatus.todo).toList();
     final inProgress =
         routines.where((r) => r.status == RoutineStatus.inProgress).toList();
     final done = routines.where((r) => r.status == RoutineStatus.done).toList();
-
+    // 완료율 (0.0 ~ 1.0)
     final total = routines.length;
     final completionRate = total == 0 ? 0.0 : done.length / total;
 
@@ -25,6 +27,7 @@ class HomeView extends ConsumerWidget {
         _Header(
           dateLabel: _dateText(),
           onAdd: () {
+            // + 버튼 눌렀을 때 새 루틴 추가 바텀시트 열기
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
@@ -36,6 +39,7 @@ class HomeView extends ConsumerWidget {
           },
         ),
         const SizedBox(height: 20),
+        // 오늘 진행 상황 요약 카드 (완료율 + 상태별 개수)
         _TodayProgressCard(
           completionRate: completionRate,
           waitingCount: todo.length,
@@ -43,15 +47,18 @@ class HomeView extends ConsumerWidget {
           doneCount: done.length,
         ),
         const SizedBox(height: 24),
+        // 진행 중 / 대기 루틴 섹션
         if (inProgress.isNotEmpty || todo.isNotEmpty) ...[
           const _SectionHeader(title: '진행 중 루틴'),
           const SizedBox(height: 12),
+          // 진행 중 루틴 카드
           ...inProgress.map(
             (routine) => RoutineCard(
               routine: routine,
               style: RoutineCardStyle.running,
             ),
           ),
+          // 아직 시작 전 루틴 카드
           ...todo.map(
             (routine) => RoutineCard(
               routine: routine,
@@ -60,6 +67,7 @@ class HomeView extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
         ],
+        // 완료된 루틴 섹션
         if (done.isNotEmpty) ...[
           const _SectionHeader(title: '완료된 루틴'),
           const SizedBox(height: 12),
@@ -70,6 +78,7 @@ class HomeView extends ConsumerWidget {
             ),
           ),
         ],
+        // 루틴이 하나도 없을 때 안내 문구
         if (routines.isEmpty)
           const Padding(
             padding: EdgeInsets.only(top: 40),
@@ -79,6 +88,7 @@ class HomeView extends ConsumerWidget {
     );
   }
 
+  // 오늘 날짜 텍스트 생성
   String _dateText() {
     final now = DateTime.now();
     const weekdayKo = ['월', '화', '수', '목', '금', '토', '일'];
@@ -141,6 +151,7 @@ class _Header extends StatelessWidget {
   }
 }
 
+// "오늘의 진행" 카드
 class _TodayProgressCard extends StatelessWidget {
   const _TodayProgressCard({
     required this.completionRate,
@@ -148,7 +159,7 @@ class _TodayProgressCard extends StatelessWidget {
     required this.inProgressCount,
     required this.doneCount,
   });
-
+  // 0.0 ~ 1.0 사이 값
   final double completionRate;
   final int waitingCount;
   final int inProgressCount;
@@ -156,6 +167,7 @@ class _TodayProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 화면에 표시할 퍼센트 텍스트
     final percentText = (completionRate * 100).toStringAsFixed(0);
 
     return Container(
@@ -186,6 +198,7 @@ class _TodayProgressCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
+          // 텍스트로 완료율 표시
           Row(
             children: [
               const Text(
@@ -203,6 +216,7 @@ class _TodayProgressCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
+          // 완료율 진행바
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
@@ -213,6 +227,7 @@ class _TodayProgressCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
+          // 대기/진행/완료 개수 요약
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -239,6 +254,7 @@ class _TodayProgressCard extends StatelessWidget {
   }
 }
 
+// 상태별(대기/진행/완료) 개수를 보여주는 칸
 class _StatusColumn extends StatelessWidget {
   const _StatusColumn({
     required this.label,
@@ -275,6 +291,7 @@ class _StatusColumn extends StatelessWidget {
   }
 }
 
+// "진행 중 루틴" / "완료된 루틴" 섹션 헤더
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title});
 
@@ -303,6 +320,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+// 루틴이 하나도 없을 때 보여주는 안내 블록
 class _EmptyState extends StatelessWidget {
   const _EmptyState();
 

@@ -52,6 +52,7 @@ class FocusFlowApp extends StatelessWidget {
   }
 }
 
+// 하단 네비게이션 바(홈/루틴/통계)
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
 
@@ -71,6 +72,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     ];
 
     return PopScope(
+      // 뒤로가기를 눌렀을 때 동작 제어
       canPop: _currentIndex == 0,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && _currentIndex != 0) {
@@ -98,6 +100,7 @@ class _MainScaffoldState extends State<MainScaffold> {
             elevation: 0,
             type: BottomNavigationBarType.fixed,
             currentIndex: _currentIndex,
+            // 탭을 눌렀을 때 현재 인덱스를 변경
             onTap: (index) => setState(() => _currentIndex = index),
             selectedItemColor: const Color(0xFF6366F1),
             unselectedItemColor: Colors.grey,
